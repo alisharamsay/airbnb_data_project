@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-lab instruction: Filter the timeframe to cover the same months as the other dataset. Clean the bond dataset, too. Similar rules as above apply - you decide what makes sense, document well, and push the final code to your repository. Please make sure to keep the Location Id and the TimeFrame. next week's goal will be to combine both datasets and compare rental prices and number of available properties.
+lab instruction: Filter the timeframe to cover the same months as the other dataset. Clean the bond dataset, too. Similar rules as above apply - you decide what makes sense, document well, and push the final code to your repository. Please make sure to keep the Location Id and the TimeFrame. Next week we will be to combine both datasets and compare rental prices and number of available properties.
 
 ```{r}
 # Check data structures
@@ -44,7 +44,7 @@ data %>%
   unique()
 ```
 
-Location Id contains no other non-numeric text besides NA/NULL and -99 NULL: The government deliberately hid or left out that data because there weren't enough rentals there to protect people's privacy. -99: Code the government uses to mean "the total for the whole country of New Zealand combined," not a specific city.
+Location Id contains no other non-numeric text besides NA/NULL and -99 NULL: The government deliberately hid or left out that data because there weren't enough rentals there to protect people's privacy. -99: Code the government uses to show "the total for the whole country of New Zealand combined," not a specific city.
 
 What to do with "NULL" strings and -99 in location ID columns??
 
