@@ -38,7 +38,7 @@ if response.status_code == 200:
   data.response.json()
   print("Success!")
     print(data)
-else:
+  else:
     print(f"Failed to fetch data. Status code: {response.status_code}")
 ```
 
