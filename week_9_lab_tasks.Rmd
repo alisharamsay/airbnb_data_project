@@ -13,7 +13,18 @@ url: https://datafinder.stats.govt.nz/layer/123515-statistical-area-2-2026/
 
 https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=3936&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true
 
+Some old code to delete later
+url = "https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=123515&x=172.6398&y=-43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true"
 
+response = requests.get(url)
+
+#Check if the request was successful (Status Code 200)
+if response.status_code == 200:
+  data = response.json()
+  print("Success!")
+  print(data)
+else:
+    print(f"Failed to fetch data. Status code: {response.status_code}")
 
 
 ```{python}
@@ -27,18 +38,25 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 API_KEY = "c301ae7a8cea42cfa1a558f4838a53a5"
 LAYER_ID = 123515
 MAX_WORKERS = 8  # Number of parallel workers querying the API simultaneously
+RADIUS = 20000
 
 
-url = "https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=123515&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true"
+def query_layer(x, y, max_results, layer_id=LAYER_ID, radius=RADIUS, api_key=API_KEY):
+    url = (
+        f"https://koordinates.com/services/query/v1/vector.json"
+        f"?key={api_key}&layer={layer_id}&x={x}&y={y}"
+        f"&max_results={max_results}&radius={radius}&geometry=true&with_field_names=true"
+    )
+    response = requests.get(url)
+    if response.status_code == 200:
+        print("y")
+        return response.json()
+    else:
+        print(f"Failed to fetch data for ({x}, {y}). Status code: {response.status_code}")
+        print("g")
+        return None
 
-response = requests.get(url)
+query_layer(172.6398,-43.5256,  3)
 
-#Check if the request was successful (Status Code 200)
-if response.status_code == 200:
-  data.response.json()
-  print("Success!")
-    print(data)
-else:
-    print(f"Failed to fetch data. Status code: {response.status_code}")
 ```
 
