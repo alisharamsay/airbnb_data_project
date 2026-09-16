@@ -73,6 +73,12 @@ glimpse(data)
 [11] "Lower Quartile Rent"\<- need turn "Null" strings to NA, and covert to numeric datatype\
 [12] "Log Std Dev Weekly Rent"\<- need turn "Null" strings to NA, and covert to numeric datatype
 
+```{r}
+#data %>% 
+ # filter(`Location Id` == "NULL") %>% 
+#  View()
+```
+
 convert all the rent columns (8-12) into proper numeric values (while automatically turning those "NULL" text strings into clean NA missing values) and keeping Location Id untouched
 
 ```{r}
@@ -269,19 +275,25 @@ glimpse(data_4)
 
 Summary: 1. Filtered the dataset to October 1, 2025 – June 30, 2026 to match the Airbnb dataset.
 
-2.  Converted literal "NULL" values to NA in location_id and the five rent-related columns (Median Rent, Geometric Mean Rent, Upper Quartile Rent, Lower Quartile Rent, and Log Std Dev Weekly Rent. This has turned the rent-related column from character strings to numeric (dbl).
-
-3.  Location ID: Converted "NULL" values to NA. There were 94 "NULL" rows. "NULL" is used when there are fewer than five bonds for a given selection, in order to suppress results and protect privacy. These 94 rows were dropped because the corresponding location IDs cannot be recovered.
+2: Location ID: There are 94 "NULL" rows. "NULL" is used when there are fewer than five bonds for a given selection, in order to suppress results and protect privacy. 
+These rows had corresponding "NULL" string in five rent-related columns (Median Rent, Geometric Mean Rent, Upper Quartile Rent, Lower Quartile Rent, and Log Std Dev Weekly Rent. These 94 rows were dropped because the corresponding location IDs cannot be recovered.This has turned the rent-related column from character strings to numeric (dbl).
 Removing these rows also removed all NA values in the rent-related columns (Median Rent, Geometric Mean Rent, Upper Quartile Rent, Lower Quartile Rent, and Log Std Dev Weekly Rent).
 Question: 
 location ID still has -99, which appears to represent country-wide total. Keeping this data makes rent right skewed (Active Bonds: mean = 358.6 vs. median = 87 Total Bonds: mean = 34.59 vs. median = 9), what to do with this?
 
-4.  Number Of Beds: contains numeric values (0–9) as well as string "ALL" and "5+" so the column is character/categorical column. 
-Question: leave it as it is?
+3.  Number Of Beds: contains numeric values (0–9) as well as string "ALL" and "5+" so the column is character/categorical column. Left as it is for now.
 
-5.  General findings: 
+4.  General findings: 
 -No duplicates were found, either for the exact combination of variables or at the primary key level (TimeFrame, Location ID, Dwelling Type, Number of Beds). 
 -Rent values: No negative or zero rents were found. 
 -Rent extremes: Median rent ranged from $90 to $3,350 per week. The highest rent values ($2,880–$3,575 per week) appear plausible rather than being data-entry errors, as they are associated with 5+ bedroom/all-dwelling properties and low bond counts. Therefore, no columns or observations were dropped based on these extreme values.
+
+Before cleaning-
+Rows: 226,080
+Columns: 12
+
+After cleaning- 
+Rows: 27,118
+Columns: 12
 
 (Note Cleaned dataset: data_4)
