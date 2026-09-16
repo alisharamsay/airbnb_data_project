@@ -5,3 +5,7 @@ output: html_document
 
 table id: 123518
 stats NZ table url: https://datafinder.stats.govt.nz/table/123518-geographic-areas-table-2026/
+
+Statistical Area 2 2026,
+layer id: 123515
+url: https://datafinder.stats.govt.nz/layer/123515-statistical-area-2-2026/
