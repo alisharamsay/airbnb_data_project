@@ -297,3 +297,7 @@ Rows: 27,118
 Columns: 12
 
 (Note Cleaned dataset: data_4)
+
+```{r}
+write.csv(data_4, file = "tenancy_cleaned_week_8.csv", row.names = FALSE)
+```
