@@ -8,13 +8,34 @@ stats NZ table url: https://datafinder.stats.govt.nz/table/123518-geographic-are
 
 Statistical Area 2 2026,
 layer id: 123515
-url: https://datafinder.stats.govt.nz/layer/123515-statistical-area-2-2026/
 
 
 https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=3936&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true
 
 
 
+Some old code to delete later
+url = "https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=123515&x=172.6398&y=-43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true"
+
+response = requests.get(url)
+
+#Check if the request was successful (Status Code 200)
+if response.status_code == 200:
+  data = response.json()
+  print("Success!")
+  print(data)
+else:
+    print(f"Failed to fetch data. Status code: {response.status_code}")
+
+#to install stuff
+reticulate::py_install(c("requests", "pandas"))
+
+
+## Querying the API
+Queries the Koordinates API. We give it a longitude (x) and 
+latitude (y) and it sends back whatever data matches that location
+If the request fails for some reason (bad internet, server 
+down, etc) it just returns None
 
 ```{python}
 import os
@@ -24,21 +45,66 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- CONFIGURATION CONTROLS ---
-API_KEY = c301ae7a8cea42cfa1a558f4838a53a5
+API_KEY = "c301ae7a8cea42cfa1a558f4838a53a5"
 LAYER_ID = 123515
 MAX_WORKERS = 8  # Number of parallel workers querying the API simultaneously
+RADIUS = 20000
 
+def query_layer(x, y, max_results, layer_id=LAYER_ID, radius=RADIUS, api_key=API_KEY):
+    url = (
+        f"https://koordinates.com/services/query/v1/vector.json"
+        f"?key={api_key}&layer={layer_id}&x={x}&y={y}"
+        f"&max_results={max_results}&radius={radius}&geometry=true&with_field_names=true"
+    )
+    response = requests.get(url)
+    if response.status_code == 200:
+        print("y")
+        return response.json()
+    else:
+        print(f"Failed to fetch data for ({x}, {y}). Status code: {response.status_code}")
+        print("g")
+        return None
 
-url = "https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=3936&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true"
+# checking the query layer works
+query_layer(172.6398,-43.5256,  3)
 
-response = requests.get(url)
-
-#Check if the request was successful (Status Code 200)
-if response.status_code == 200:
-  data.response.json()
-  print("Success!")
-    print(data)
-  else:
-    print(f"Failed to fetch data. Status code: {response.status_code}")
 ```
 
+Column we are getting: SA22026_V1_00. <-- may change this later????
+
+## Getting the info (area code + suburb name) for the location
+Uses the query function above but pulls out just the area code and the name. 
+```{python}
+def get_area_info(x, y):
+    """returns SA22026_V1_00 value (area code) and SA22026_V1_00_NAME (suburb name) for latitude and      longitude, or returns None, None"""
+    # Query the API
+    data = query_layer(x, y, max_results=1)
+
+    # query_layer() returns None if the request failed
+    if data is None:
+        return None, None
+
+    try:
+        features = data["vectorQuery"]["layers"][str(LAYER_ID)]["features"]
+
+        # If no matches found at this point return None
+        if len(features) == 0:
+            return None, None
+
+        # Get the area code and suburb name from the result's properties
+        props = features[0]["properties"]
+        return props["SA22026_V1_00"], props["SA22026_V1_00_NAME"]
+
+    # do not run for key error (where field name doesn't exist) or index error (features list was         empty and not caught by len()==0 bit)
+    except (KeyError, IndexError):
+        return None, None
+```
+
+A couple tests
+```{python}
+code, name = get_area_info(172.5810, -43.5227)
+print(name)
+
+code, name = get_area_info(172.6362, -43.5320)  # Cathedral Square, Christchurch
+print(code, name)
+```
