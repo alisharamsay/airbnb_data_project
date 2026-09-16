@@ -8,10 +8,11 @@ stats NZ table url: https://datafinder.stats.govt.nz/table/123518-geographic-are
 
 Statistical Area 2 2026,
 layer id: 123515
-url: https://datafinder.stats.govt.nz/layer/123515-statistical-area-2-2026/
 
 
 https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=3936&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true
+
+
 
 Some old code to delete later
 url = "https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=123515&x=172.6398&y=-43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true"
@@ -28,6 +29,8 @@ else:
 
 #to install stuff
 reticulate::py_install(c("requests", "pandas"))
+
+
 
 ```{python}
 import os
@@ -57,7 +60,35 @@ def query_layer(x, y, max_results, layer_id=LAYER_ID, radius=RADIUS, api_key=API
         print("g")
         return None
 
+# checking the query layer works
 query_layer(172.6398,-43.5256,  3)
 
+```
+
+Column we are getting: SA22026_V1_00. <-- may change this later????
+```{python}
+def get_area_code(x,y):
+    """returns SA22026_V1_00 value for latitude and longitude, or returns None"""
+    # Query the API
+    data = query_layer(x, y, max_results=1)
+  
+    # query_layer() returns None if the request failed
+    if data is None:
+        return None
+  
+    try:
+        features = data["vectorQuery"]["layers"][str(LAYER_ID)]["features"]
+    
+    # If no matches found at this point return None
+        if len(features) == 0:
+            return None
+    
+        # Get the district name from the result's properties
+        return features[0]["properties"]["SA22026_V1_00"]
+  
+    # do not run for key error (where field name doesn't exist) or index error (features list was empty     and not caught by len()==0 bit)
+    except (KeyError, IndexError):
+        return None
+    
 ```
 
