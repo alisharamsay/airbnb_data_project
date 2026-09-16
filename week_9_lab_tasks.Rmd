@@ -31,6 +31,11 @@ else:
 reticulate::py_install(c("requests", "pandas"))
 
 
+## Querying the API
+Queries the Koordinates API. We give it a longitude (x) and 
+latitude (y) and it sends back whatever data matches that location
+If the request fails for some reason (bad internet, server 
+down, etc) it just returns None
 
 ```{python}
 import os
@@ -66,29 +71,41 @@ query_layer(172.6398,-43.5256,  3)
 ```
 
 Column we are getting: SA22026_V1_00. <-- may change this later????
+
+## Getting the info (area code + suburb name) for the location
+Uses the query function above but pulls out just the area code and the name. 
 ```{python}
-def get_area_code(x,y):
-    """returns SA22026_V1_00 value for latitude and longitude, or returns None"""
+def get_area_info(x, y):
+    """returns SA22026_V1_00 value (area code) and SA22026_V1_00_NAME (suburb name) for latitude and      longitude, or returns None, None"""
     # Query the API
     data = query_layer(x, y, max_results=1)
-  
+
     # query_layer() returns None if the request failed
     if data is None:
-        return None
-  
+        return None, None
+
     try:
         features = data["vectorQuery"]["layers"][str(LAYER_ID)]["features"]
-    
-    # If no matches found at this point return None
+
+        # If no matches found at this point return None
         if len(features) == 0:
-            return None
-    
-        # Get the district name from the result's properties
-        return features[0]["properties"]["SA22026_V1_00"]
-  
-    # do not run for key error (where field name doesn't exist) or index error (features list was empty     and not caught by len()==0 bit)
+            return None, None
+
+        # Get the area code and suburb name from the result's properties
+        props = features[0]["properties"]
+        return props["SA22026_V1_00"], props["SA22026_V1_00_NAME"]
+
+    # do not run for key error (where field name doesn't exist) or index error (features list was         empty and not caught by len()==0 bit)
     except (KeyError, IndexError):
-        return None
-    
+        return None, None
+```
+
+A couple tests
+```{python}
+code, name = get_area_info(172.5810, -43.5227)
+print(name)
+
+code, name = get_area_info(172.6362, -43.5320)  # Cathedral Square, Christchurch
+print(code, name)
 ```
 
