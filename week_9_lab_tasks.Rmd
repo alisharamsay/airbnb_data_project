@@ -3,3 +3,5 @@ title: "week_9_lab_tasks"
 output: html_document
 ---
 
+table id: 123518
+stats NZ table url: https://datafinder.stats.govt.nz/table/123518-geographic-areas-table-2026/
