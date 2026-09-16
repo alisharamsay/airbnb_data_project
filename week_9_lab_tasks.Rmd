@@ -18,7 +18,7 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- CONFIGURATION CONTROLS ---
-API_KEY = "PASTE_YOUR_API_KEY_HERE"
-LAYER_ID = "PASTE_STATS_NZ_LAYER_ID_HERE"  # e.g., '105688'
-MAX_WORKERS = 10  # Number of parallel workers querying the API simultaneously
+API_KEY = c301ae7a8cea42cfa1a558f4838a53a5
+LAYER_ID = 123515
+MAX_WORKERS = 8  # Number of parallel workers querying the API simultaneously
 
