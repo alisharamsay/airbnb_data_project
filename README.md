@@ -138,7 +138,7 @@ over time.
 
 -The files above are for private bonds, starting from January 1993. 
 'Private' means private sector landlords. 
-
+th
 -This data comes from our tenancy bond database, which records all new 
 rental bonds that are lodged with us each month.
 

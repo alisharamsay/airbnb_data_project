@@ -24,12 +24,12 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # --- CONFIGURATION CONTROLS ---
-API_KEY = c301ae7a8cea42cfa1a558f4838a53a5
+API_KEY = "c301ae7a8cea42cfa1a558f4838a53a5"
 LAYER_ID = 123515
 MAX_WORKERS = 8  # Number of parallel workers querying the API simultaneously
 
 
-url = "https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=3936&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true"
+url = "https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=123515&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true"
 
 response = requests.get(url)
 
