@@ -40,7 +40,6 @@ LAYER_ID = 123515
 MAX_WORKERS = 8  # Number of parallel workers querying the API simultaneously
 RADIUS = 20000
 
-
 def query_layer(x, y, max_results, layer_id=LAYER_ID, radius=RADIUS, api_key=API_KEY):
     url = (
         f"https://koordinates.com/services/query/v1/vector.json"
