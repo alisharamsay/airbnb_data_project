@@ -13,20 +13,6 @@ layer id: 123515
 https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=3936&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true
 
 
-
-Some old code to delete later
-url = "https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=123515&x=172.6398&y=-43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true"
-
-response = requests.get(url)
-
-#Check if the request was successful (Status Code 200)
-if response.status_code == 200:
-  data = response.json()
-  print("Success!")
-  print(data)
-else:
-    print(f"Failed to fetch data. Status code: {response.status_code}")
-
 #to install stuff
 reticulate::py_require(c("requests", "pandas"))
 ```{r}
@@ -113,6 +99,8 @@ print(name)
 code, name = get_area_info(172.6362, -43.5320)  # Cathedral Square, Christchurch
 print(code, name)
 ```
+
+
 ```{python}
 # Define input/output file paths, directories, and configuration IDs for week 9 datasets.
 from pathlib import Path
@@ -177,6 +165,7 @@ def run_batch_geocoding(airbnb: pd.DataFrame) -> pd.DataFrame:
 airbnb = pd.read_csv(AIRBNB_IN)
 airbnb_geocoded = run_batch_geocoding(airbnb)
 ```
+
 ```{r}
 # Look at the now airbnb file that has area codes in it got from Koordinates
 library(tidyverse)
@@ -185,10 +174,12 @@ library(lubridate)
 data <- read_csv('week_9_datasets/airbnb_with_area_codes.csv')
 summary(data)
 ```
+
 ```{r}
 # double check has area code in it 
 glimpse(data)
 ```
+
 ```{r}
 # Merge the airbnb_with_area_codes with tenancy_cleaned_week_8 using left join to keep all the columns. 
 
@@ -218,6 +209,7 @@ joined <- airbnb %>%
 # save to a new dataset: airbnb_tenancy_joined.csv
 write_csv(joined, "week_9_datasets/airbnb_tenancy_joined.csv")
 ```
+
 ```{r}
 joined_data <- read_csv('week_9_datasets/airbnb_tenancy_joined.csv')
 glimpse(joined_data)
