@@ -28,7 +28,7 @@ else:
     print(f"Failed to fetch data. Status code: {response.status_code}")
 
 #to install stuff
-reticulate::py_install(c("requests", "pandas"))
+reticulate::py_require(c("requests", "pandas"))
 
 
 ## Querying the API
@@ -108,3 +108,125 @@ print(name)
 code, name = get_area_info(172.6362, -43.5320)  # Cathedral Square, Christchurch
 print(code, name)
 ```
+```{python}
+# Define input/output file paths, directories, and configuration IDs for week 9 datasets.
+from pathlib import Path
+import numpy as np
+
+DATA_DIR = Path("week_9_datasets")
+AIRBNB_IN = DATA_DIR / "airbnb_cleaned_week_8.csv"
+TENANCY_IN = DATA_DIR / "tenancy_cleaned_week_8.csv"
+AIRBNB_WITH_AREA_OUT = DATA_DIR / "airbnb_with_area_codes.csv"
+GEO_AREAS_TABLE_CSV = DATA_DIR / "geographic_areas_table_2026.csv"
+GEO_AREAS_TABLE_ID = 123518
+```
+
+```{python}
+# Perform parallel batch geocoding for unique coordinates using a cache to skip existing locations, then save the enriched dataset.
+
+def run_batch_geocoding(airbnb: pd.DataFrame) -> pd.DataFrame:
+    unique_coords = airbnb[["latitude", "longitude"]].drop_duplicates().reset_index(drop=True)
+
+    if AIRBNB_WITH_AREA_OUT.exists(): # If airbnb_with_area_codes.csv exist, every future call to this function loads it first and only queries coordinates that are still missing an area code. If everything geocoded successfully, to do will be empty.
+        cached = pd.read_csv(AIRBNB_WITH_AREA_OUT)
+        done = cached.dropna(subset=["area_code"])[["latitude", "longitude", "area_code", "area_name"]].drop_duplicates()
+        merged = unique_coords.merge(done, on=["latitude", "longitude"], how="left")
+    else:
+        merged = unique_coords.copy()
+        merged["area_code"] = np.nan
+        merged["area_name"] = np.nan
+
+    todo = merged[merged["area_code"].isna()]
+    print(f"{len(todo)} / {len(unique_coords)} unique coordinates still need querying")
+
+    if len(todo) > 0:
+        records = []
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = {
+                executor.submit(get_area_info, row.longitude, row.latitude): (row.latitude, row.longitude) # calls Alisha's get_area_info()
+                for row in todo.itertuples()
+            }
+            completed = 0
+            for future in as_completed(futures):
+                lat, lon = futures[future]
+                area_code, area_name = future.result()
+                records.append({"latitude": lat, "longitude": lon, "area_code": area_code, "area_name": area_name})
+                completed += 1
+                if completed % 200 == 0:
+                    print(f"{completed} / {len(todo)} done")
+
+        results_df = pd.DataFrame(records)
+        merged = merged.merge(results_df, on=["latitude", "longitude"], how="left", suffixes=("", "_new"))
+        merged["area_code"] = merged["area_code"].combine_first(merged["area_code_new"])
+        merged["area_name"] = merged["area_name"].combine_first(merged["area_name_new"])
+        merged = merged.drop(columns=["area_code_new", "area_name_new"])
+
+    airbnb_out = airbnb.merge(merged, on=["latitude", "longitude"], how="left")
+    airbnb_out.to_csv(AIRBNB_WITH_AREA_OUT, index=False)
+    print(f"Saved {AIRBNB_WITH_AREA_OUT} ({airbnb_out['area_code'].notna().sum()} / {len(airbnb_out)} rows matched)")
+    return airbnb_out
+```
+
+```{python}
+# Load the cleaned Airbnb dataset from CSV and run batch geocoding to assign geographic area information.
+airbnb = pd.read_csv(AIRBNB_IN)
+airbnb_geocoded = run_batch_geocoding(airbnb)
+```
+```{r}
+# Look at the now airbnb file that has area codes in it got from Koordinates
+data <- read_csv('week_9_datasets/airbnb_with_area_codes.csv')
+summary(data)
+```
+```{r}
+# double check has area code in it 
+glimpse(data)
+```
+```{r}
+# Merge the airbnb_with_area_codes with tenancy_cleaned_week_8 using left join to keep all the columns. 
+library(tidyverse)
+library(lubridate)
+
+airbnb <- read_csv("week_9_datasets/airbnb_with_area_codes.csv")
+tenancy <- read_csv("week_9_datasets/tenancy_cleaned_week_8.csv")
+
+airbnb <- airbnb %>%
+  mutate(
+    month_date = ym(month_year),
+    quarter = floor_date(month_date, unit = "quarter"),
+    area_code = as.numeric(area_code)
+  )
+
+tenancy_all <- tenancy %>%
+  filter(
+    `Dwelling Type` == "ALL",
+    `Number Of Beds` == "ALL",
+    `Location Id` != -99
+  ) %>%
+  rename(area_code = `Location Id`) %>%
+  mutate(quarter = as.Date(TimeFrame))
+
+# Left join
+joined <- airbnb %>%
+  left_join(tenancy_all, by = c("area_code", "quarter"))
+
+# save to a new dataset: airbnb_tenancy_joined.csv
+write_csv(joined, "week_9_datasets/airbnb_tenancy_joined.csv")
+```
+```{r}
+joined_data <- read_csv('week_9_datasets/airbnb_tenancy_joined.csv')
+glimpse(joined_data)
+```
+17/9/2026 - Alice
+•	Dropped rows with location ID -99 from the Week 8 tenancy file.
+•	Created week_9_datasets folder, which contains the two cleaned Week 8 files: Airbnb_cleaned_week_8 and tenancy_cleaned_week_8.
+•	Airbnb data has latitude/longitude, while tenancy data has area codes. Used the Koordinates API to geocode each unique Airbnb coordinate to its official SA2 area code.
+•	Downloaded geographic-area-tables-2026.csv from Koordinates and added it to .gitignore because of its large size (So won’t be uploaded to GitHub).
+•	Created run_batch_geocoding(), which uses Alisha’s get_area_info() and query_layer() functions. It batch-geocoded ~4,000 unique coordinates.
+•	The function saves the result as airbnb_with_area_code.csv with a new area_code column. It also checks for existing output and only queries coordinates with missing area codes, avoiding unnecessary API calls.
+•	Joined the geocoded Airbnb data with tenancy_cleaned_week_8 using a left join, keeping all Airbnb listings. It first converted Airbnb’s monthly dates into quarterly periods to match the rental data, then joined on both area_code and quarter.
+•	Used a left join so Airbnb listings are retained even when there is no matching rental data for their area/quarter.
+•	Saved the final combined dataset as airbnb_tenancy_joined.csv.
+
+Note merged data assigned variable name: joined_data 
+
+

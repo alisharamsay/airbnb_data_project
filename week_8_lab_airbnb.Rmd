@@ -453,3 +453,7 @@ After cleaning: 28780, columns: 18
     
 
 (Note: Cleaned dataset: df_cleaned)
+
+```{r}
+write.csv(df_cleaned, file = "week_9_datasets/airbnb_cleaned_week_8.csv", row.names = FALSE)
+```
