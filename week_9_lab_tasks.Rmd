@@ -218,15 +218,29 @@ glimpse(joined_data)
 ```
 17/9/2026 - Alice
 •	Dropped rows with location ID -99 from the Week 8 tenancy file.
+
 •	Created week_9_datasets folder, which contains the two cleaned Week 8 files: Airbnb_cleaned_week_8 and tenancy_cleaned_week_8.
+
 •	Airbnb data has latitude/longitude, while tenancy data has area codes. Used the Koordinates API to geocode each unique Airbnb coordinate to its official SA2 area code.
-•	Downloaded geographic-area-tables-2026.csv from Koordinates and added it to .gitignore because of its large size (So won’t be uploaded to GitHub).
-•	Created run_batch_geocoding(), which uses Alisha’s get_area_info() and query_layer() functions. It batch-geocoded ~4,000 unique coordinates.
-•	The function saves the result as airbnb_with_area_code.csv with a new area_code column. It also checks for existing output and only queries coordinates with missing area codes, avoiding unnecessary API calls.
+
+•	Downloaded geographic-areas-tables-2026.csv (originally a zip file with 5 files in it, including geographic-areas-table-2026.csv) from Koordinates
+
+•	Created run_batch_geocoding(), which uses Alisha’s get_area_info() and query_layer() functions. It batch-geocoded ~4,000 unique coordinates. The function saves the result as airbnb_with_area_code.csv with a new area_code column. It also checks for existing output and only queries coordinates with missing area codes, avoiding unnecessary API calls from now on.
+
 •	Joined the geocoded Airbnb data with tenancy_cleaned_week_8 using a left join, keeping all Airbnb listings. It first converted Airbnb’s monthly dates into quarterly periods to match the rental data, then joined on both area_code and quarter.
-•	Used a left join so Airbnb listings are retained even when there is no matching rental data for their area/quarter.
+Used a left join so Airbnb listings are retained even when there is no matching rental data for their area/quarter. (Inner join will delete any data without matching rental data. Full/outer join will include tenancy rows that are NOT in chch, which is not meaningful)
+
 •	Saved the final combined dataset as airbnb_tenancy_joined.csv.
 
 Note merged data assigned variable name: joined_data 
+Heads up airbnb_tenancy_joined.csv is the finished joined data: joined_data <- read_csv('week_9_datasets/airbnb_tenancy_joined.csv'. So mess with joined_data however you want for your part. Just not write_csv() back to that exact filename (hopefully we won't have to write another csv file but just in case) otherwise will overwrite it for everyone. If we need to save our own version, give it a totally different name, like price_gap.csv or something so it doesn't get confused with the original.
 
+# What’s the median AirBnB price in Christchurch Central (Location ID 326600) - Alice
 
+```{r}
+task1_data <- joined_data
+```
+
+# In which part of Christchurch can we observe the craziest (largest) gap between short- and long-term rental prices? - Charlie or Alisha 
+
+# Compare how many AirBnBs and rental properties we have in each location - Charlie or Alisha
