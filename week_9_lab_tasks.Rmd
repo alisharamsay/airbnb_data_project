@@ -29,6 +29,11 @@ else:
 
 #to install stuff
 reticulate::py_require(c("requests", "pandas"))
+```{r}
+# This line sets up the Python environment automatically - must run first, don't delete
+# packages live in a local cache on each machine, not in this file, so this line tells reticulate which packages to use/build each fresh session.
+reticulate::py_require(c("pandas", "requests", "numpy"))
+```
 
 
 ## Querying the API
@@ -174,6 +179,9 @@ airbnb_geocoded = run_batch_geocoding(airbnb)
 ```
 ```{r}
 # Look at the now airbnb file that has area codes in it got from Koordinates
+library(tidyverse)
+library(lubridate)
+
 data <- read_csv('week_9_datasets/airbnb_with_area_codes.csv')
 summary(data)
 ```
@@ -183,8 +191,6 @@ glimpse(data)
 ```
 ```{r}
 # Merge the airbnb_with_area_codes with tenancy_cleaned_week_8 using left join to keep all the columns. 
-library(tidyverse)
-library(lubridate)
 
 airbnb <- read_csv("week_9_datasets/airbnb_with_area_codes.csv")
 tenancy <- read_csv("week_9_datasets/tenancy_cleaned_week_8.csv")
