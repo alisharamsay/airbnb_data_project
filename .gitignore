@@ -7,5 +7,5 @@
 listings.csv
 
 # Prevent geographic area table from Koordinates (week 9) from uploading to GitHub
-week_9_datasets/geographic-area-table-2026*
-!week_9_datasets/geographic-area-table-2026.csv
+week_9_datasets/geographic-areas-table-2026*
+!week_9_datasets/geographic-areas-table-2026.csv
