@@ -239,6 +239,65 @@ Heads up airbnb_tenancy_joined.csv is the finished joined data: joined_data <- r
 task1_data <- joined_data
 ```
 
-# In which part of Christchurch can we observe the craziest (largest) gap between short- and long-term rental prices? - Charlie or Alisha 
+# In which part of Christchurch can we observe the craziest (largest) gap between short- and long-term rental prices? - Alisha 
+```{r}
+# Check data columns
+glimpse(joined_data)
+```
 
-# Compare how many AirBnBs and rental properties we have in each location - Charlie or Alisha
+Adding price_gap and filtering data
+```{r}
+
+joined_data <- joined_data %>%
+  mutate(
+    rental_price_per_night_median = `Median Rent` / 7, #putting median price per week into per day
+    price_gap = price - rental_price_per_night_median # calculating the price gap for each row which is Airbnb nightly price minus median long-term rent per night
+  )
+
+
+# filter out rows without data (eg NA)
+gap_data <- joined_data %>%
+  filter(!is.na(price), !is.na(`Median Rent`))
+
+```
+
+Most areas have between 1 and 2000 properties. this makes sense as sime areas have much more air bnb listings than others. This makes sense as areas like the city will be much more likely to have listings than smaller futher out areas like Aranui.
+
+Decided to only include areas with over 10 properties listed
+```{r}
+# Summarise gap by area 
+gap_by_area <- gap_data %>%
+  group_by(area_code, area_name) %>%
+  summarise(
+    median_gap = median(price_gap, na.rm = TRUE), #calculating median price gap for areas excluding NA
+    n = n(), # stores number of listings in each group
+    .groups = "drop" #remove grouping after summarising
+  ) %>%
+  arrange(desc(median_gap)) %>% # sorts areas from biggest to smallest price gap 
+  filter(n >= 15) # excludes areas with too few listings for the median to be reliable
+
+head(gap_by_area, 15)
+```
+
+```{r}
+gap_by_area %>%
+  arrange(area_name) %>%
+  print(n = Inf)
+```
+
+Tried with SA2 suburb areas but they were smaller areas and wards are bigger with higher numbers of listings
+```{r}
+gap_by_ward <- gap_data %>%
+  group_by(neighbourhood) %>%
+  summarise(
+    median_gap = median(price_gap, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(median_gap))
+
+head(gap_by_ward, 10)
+```
+
+
+# Compare how many AirBnBs and rental properties we have in each location - Charlie
