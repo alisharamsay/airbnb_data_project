@@ -13,22 +13,13 @@ layer id: 123515
 https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=3936&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true
 
 
-
-Some old code to delete later
-url = "https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=123515&x=172.6398&y=-43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true"
-
-response = requests.get(url)
-
-#Check if the request was successful (Status Code 200)
-if response.status_code == 200:
-  data = response.json()
-  print("Success!")
-  print(data)
-else:
-    print(f"Failed to fetch data. Status code: {response.status_code}")
-
 #to install stuff
-reticulate::py_install(c("requests", "pandas"))
+reticulate::py_require(c("requests", "pandas"))
+```{r}
+# This line sets up the Python environment automatically - must run first, don't delete
+# packages live in a local cache on each machine, not in this file, so this line tells reticulate which packages to use/build each fresh session.
+reticulate::py_require(c("pandas", "requests", "numpy"))
+```
 
 
 ## Querying the API
@@ -109,24 +100,204 @@ code, name = get_area_info(172.6362, -43.5320)  # Cathedral Square, Christchurch
 print(code, name)
 ```
 
-Adding column to airbnb table for area codes
+
 ```{python}
-import panda as pd
+# Define input/output file paths, directories, and configuration IDs for week 9 datasets.
+from pathlib import Path
+import numpy as np
 
-airbnb = pd.read_csv("airbnb_cleaned_week_8.csv")
-
-LAT_COL = "latitude"   
-LON_COL = "longitude"  
-
-with ThreadPoolExecutor(max_workers=8) as executor:
-    results = list(executor.map(
-        lambda row: get_area_info(row[LON_COL], row[LAT_COL]),
-        [row for _, row in airbnb.head(5).iterrows()]
-    ))
-
-airbnb["area_code"] = zip(*results)
-
-airbnb.to_csv("airbnb_ac_week_9.csv", index=False)
-print(f"Saved {len(airbnb)} rows to airbnb_ac_week_9.csv")
+DATA_DIR = Path("week_9_datasets")
+AIRBNB_IN = DATA_DIR / "airbnb_cleaned_week_8.csv"
+TENANCY_IN = DATA_DIR / "tenancy_cleaned_week_8.csv"
+AIRBNB_WITH_AREA_OUT = DATA_DIR / "airbnb_with_area_codes.csv"
+GEO_AREAS_TABLE_CSV = DATA_DIR / "geographic_areas_table_2026.csv"
+GEO_AREAS_TABLE_ID = 123518
 ```
 
+```{python}
+# Perform parallel batch geocoding for unique coordinates using a cache to skip existing locations, then save the enriched dataset.
+
+def run_batch_geocoding(airbnb: pd.DataFrame) -> pd.DataFrame:
+    unique_coords = airbnb[["latitude", "longitude"]].drop_duplicates().reset_index(drop=True)
+
+    if AIRBNB_WITH_AREA_OUT.exists(): # If airbnb_with_area_codes.csv exist, every future call to this function loads it first and only queries coordinates that are still missing an area code. If everything geocoded successfully, to do will be empty.
+        cached = pd.read_csv(AIRBNB_WITH_AREA_OUT)
+        done = cached.dropna(subset=["area_code"])[["latitude", "longitude", "area_code", "area_name"]].drop_duplicates()
+        merged = unique_coords.merge(done, on=["latitude", "longitude"], how="left")
+    else:
+        merged = unique_coords.copy()
+        merged["area_code"] = np.nan
+        merged["area_name"] = np.nan
+
+    todo = merged[merged["area_code"].isna()]
+    print(f"{len(todo)} / {len(unique_coords)} unique coordinates still need querying")
+
+    if len(todo) > 0:
+        records = []
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            futures = {
+                executor.submit(get_area_info, row.longitude, row.latitude): (row.latitude, row.longitude) # calls Alisha's get_area_info()
+                for row in todo.itertuples()
+            }
+            completed = 0
+            for future in as_completed(futures):
+                lat, lon = futures[future]
+                area_code, area_name = future.result()
+                records.append({"latitude": lat, "longitude": lon, "area_code": area_code, "area_name": area_name})
+                completed += 1
+                if completed % 200 == 0:
+                    print(f"{completed} / {len(todo)} done")
+
+        results_df = pd.DataFrame(records)
+        merged = merged.merge(results_df, on=["latitude", "longitude"], how="left", suffixes=("", "_new"))
+        merged["area_code"] = merged["area_code"].combine_first(merged["area_code_new"])
+        merged["area_name"] = merged["area_name"].combine_first(merged["area_name_new"])
+        merged = merged.drop(columns=["area_code_new", "area_name_new"])
+
+    airbnb_out = airbnb.merge(merged, on=["latitude", "longitude"], how="left")
+    airbnb_out.to_csv(AIRBNB_WITH_AREA_OUT, index=False)
+    print(f"Saved {AIRBNB_WITH_AREA_OUT} ({airbnb_out['area_code'].notna().sum()} / {len(airbnb_out)} rows matched)")
+    return airbnb_out
+```
+
+```{python}
+# Load the cleaned Airbnb dataset from CSV and run batch geocoding to assign geographic area information.
+airbnb = pd.read_csv(AIRBNB_IN)
+airbnb_geocoded = run_batch_geocoding(airbnb)
+```
+
+```{r}
+# Look at the now airbnb file that has area codes in it got from Koordinates
+library(tidyverse)
+library(lubridate)
+
+data <- read_csv('week_9_datasets/airbnb_with_area_codes.csv')
+summary(data)
+```
+
+```{r}
+# double check has area code in it 
+glimpse(data)
+```
+
+```{r}
+# Merge the airbnb_with_area_codes with tenancy_cleaned_week_8 using left join to keep all the columns. 
+
+airbnb <- read_csv("week_9_datasets/airbnb_with_area_codes.csv")
+tenancy <- read_csv("week_9_datasets/tenancy_cleaned_week_8.csv")
+
+airbnb <- airbnb %>%
+  mutate(
+    month_date = ym(month_year),
+    quarter = floor_date(month_date, unit = "quarter"),
+    area_code = as.numeric(area_code)
+  )
+
+tenancy_all <- tenancy %>%
+  filter(
+    `Dwelling Type` == "ALL",
+    `Number Of Beds` == "ALL",
+    `Location Id` != -99
+  ) %>%
+  rename(area_code = `Location Id`) %>%
+  mutate(quarter = as.Date(TimeFrame))
+
+# Left join
+joined <- airbnb %>%
+  left_join(tenancy_all, by = c("area_code", "quarter"))
+
+# save to a new dataset: airbnb_tenancy_joined.csv
+write_csv(joined, "week_9_datasets/airbnb_tenancy_joined.csv")
+```
+
+```{r}
+joined_data <- read_csv('week_9_datasets/airbnb_tenancy_joined.csv')
+glimpse(joined_data)
+```
+17/9/2026 - Alice
+•	Dropped rows with location ID -99 from the Week 8 tenancy file.
+
+•	Created week_9_datasets folder, which contains the two cleaned Week 8 files: Airbnb_cleaned_week_8 and tenancy_cleaned_week_8.
+
+•	Airbnb data has latitude/longitude, while tenancy data has area codes. Used the Koordinates API to geocode each unique Airbnb coordinate to its official SA2 area code.
+
+•	Downloaded geographic-areas-tables-2026.csv (originally a zip file with 5 files in it, including geographic-areas-table-2026.csv) from Koordinates
+
+•	Created run_batch_geocoding(), which uses Alisha’s get_area_info() and query_layer() functions. It batch-geocoded ~4,000 unique coordinates. The function saves the result as airbnb_with_area_code.csv with a new area_code column. It also checks for existing output and only queries coordinates with missing area codes, avoiding unnecessary API calls from now on.
+
+•	Joined the geocoded Airbnb data with tenancy_cleaned_week_8 using a left join, keeping all Airbnb listings. It first converted Airbnb’s monthly dates into quarterly periods to match the rental data, then joined on both area_code and quarter.
+Used a left join so Airbnb listings are retained even when there is no matching rental data for their area/quarter. (Inner join will delete any data without matching rental data. Full/outer join will include tenancy rows that are NOT in chch, which is not meaningful)
+
+•	Saved the final combined dataset as airbnb_tenancy_joined.csv.
+
+Note merged data assigned variable name: joined_data 
+Heads up airbnb_tenancy_joined.csv is the finished joined data: joined_data <- read_csv('week_9_datasets/airbnb_tenancy_joined.csv'. So mess with joined_data however you want for your part. Just not write_csv() back to that exact filename (hopefully we won't have to write another csv file but just in case) otherwise will overwrite it for everyone. If we need to save our own version, give it a totally different name, like price_gap.csv or something so it doesn't get confused with the original.
+
+# What’s the median AirBnB price in Christchurch Central (Location ID 326600) - Alice
+
+```{r}
+task1_data <- joined_data
+```
+
+# In which part of Christchurch can we observe the craziest (largest) gap between short- and long-term rental prices? - Alisha 
+```{r}
+# Check data columns
+glimpse(joined_data)
+```
+
+Adding price_gap and filtering data
+```{r}
+
+joined_data <- joined_data %>%
+  mutate(
+    rental_price_per_night_median = `Median Rent` / 7, #putting median price per week into per day
+    price_gap = price - rental_price_per_night_median # calculating the price gap for each row which is Airbnb nightly price minus median long-term rent per night
+  )
+
+
+# filter out rows without data (eg NA)
+gap_data <- joined_data %>%
+  filter(!is.na(price), !is.na(`Median Rent`))
+
+```
+
+Most areas have between 1 and 2000 properties. this makes sense as sime areas have much more air bnb listings than others. This makes sense as areas like the city will be much more likely to have listings than smaller futher out areas like Aranui.
+
+Decided to only include areas with over 10 properties listed
+```{r}
+# Summarise gap by area 
+gap_by_area <- gap_data %>%
+  group_by(area_code, area_name) %>%
+  summarise(
+    median_gap = median(price_gap, na.rm = TRUE), #calculating median price gap for areas excluding NA
+    n = n(), # stores number of listings in each group
+    .groups = "drop" #remove grouping after summarising
+  ) %>%
+  arrange(desc(median_gap)) %>% # sorts areas from biggest to smallest price gap 
+  filter(n >= 15) # excludes areas with too few listings for the median to be reliable
+
+head(gap_by_area, 15)
+```
+
+```{r}
+gap_by_area %>%
+  arrange(area_name) %>%
+  print(n = Inf)
+```
+
+Tried with SA2 suburb areas but they were smaller areas and wards are bigger with higher numbers of listings
+```{r}
+gap_by_ward <- gap_data %>%
+  group_by(neighbourhood) %>%
+  summarise(
+    median_gap = median(price_gap, na.rm = TRUE),
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(median_gap))
+
+head(gap_by_ward, 10)
+```
+
+
+# Compare how many AirBnBs and rental properties we have in each location - Charlie

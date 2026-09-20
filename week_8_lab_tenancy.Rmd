@@ -298,6 +298,12 @@ Columns: 12
 
 (Note Cleaned dataset: data_4)
 
+# Remove -99 rows
 ```{r}
-write.csv(data_4, file = "tenancy_cleaned_week_8.csv", row.names = FALSE)
+cleaned_data <- data_4 %>%
+  filter(`Location Id` != "-99")
+glimpse(cleaned_data)
+```
+```{r}
+write.csv(cleaned_data, file = "week_9_datasets/tenancy_cleaned_week_8.csv", row.names = FALSE)
 ```
