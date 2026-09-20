@@ -195,9 +195,9 @@ airbnb <- airbnb %>%
 
 tenancy_all <- tenancy %>%
   filter(
-    `Dwelling Type` == "ALL",
-    `Number Of Beds` == "ALL",
-    `Location Id` != -99
+    `Dwelling Type` == "ALL", # Keeps only rows where the dwelling type is set to "ALL"
+    `Number Of Beds` == "ALL", # Keeps only rows where the number of beds is set to "ALL"
+    `Location Id` != -99 # Removes rows where the location ID is -99
   ) %>%
   rename(area_code = `Location Id`) %>%
   mutate(quarter = as.Date(TimeFrame))
@@ -215,7 +215,7 @@ joined_data <- read_csv('week_9_datasets/airbnb_tenancy_joined.csv')
 glimpse(joined_data)
 ```
 17/9/2026 - Alice
-•	Dropped rows with location ID -99 from the Week 8 tenancy file.
+•	Dropped rows with location ID -99 from the Week 8 tenancy file and filtered to keep only rows where Dwelling Type == "ALL" and Number Of Beds == "ALL". (This makes sure there is only 1 row per suburb and quarter, which prevents our Airbnb listings from getting duplicated when we merge the files.)
 
 •	Created week_9_datasets folder, which contains the two cleaned Week 8 files: Airbnb_cleaned_week_8 and tenancy_cleaned_week_8.
 
@@ -237,7 +237,36 @@ Heads up airbnb_tenancy_joined.csv is the finished joined data: joined_data <- r
 
 ```{r}
 task1_data <- joined_data
+
+# Quick check: see what area_code actually looks like (numbers? text? are there NAs?)
+glimpse(task1_data$area_code)
 ```
+```{r}
+# Filter down to just Christchurch Central (area code 326600) and drop any rows where price is missing (can't include those in a median)
+chch_central <- task1_data %>%
+  filter(area_code == 326600, !is.na(price))
+
+head(chch_central)
+```
+```{r}
+# Check how many listings we actually got 
+nrow(chch_central)
+```
+```{r}
+# Calculate the median price
+median_price <- median(chch_central$price)
+
+median_price
+```
+```{r}
+# Just for comparison - what's the median price across ALL of Christchurch, not just Central?
+# if any rows have blank or missing values (NA) for the price, ignore them and calculate the median with what's left
+median(task1_data$price, na.rm = TRUE)
+```
+Summary 21/9/2026 - Alice
+Median airbnb price in CHCH central (area code 326600) is $239 (based on 724 listings with a recorded price)
+
+
 
 # In which part of Christchurch can we observe the craziest (largest) gap between short- and long-term rental prices? - Alisha 
 ```{r}
