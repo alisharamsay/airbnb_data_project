@@ -108,3 +108,25 @@ print(name)
 code, name = get_area_info(172.6362, -43.5320)  # Cathedral Square, Christchurch
 print(code, name)
 ```
+
+Adding column to airbnb table for area codes
+```{python}
+import panda as pd
+
+airbnb = pd.read_csv("airbnb_cleaned_week_8.csv")
+
+LAT_COL = "latitude"   
+LON_COL = "longitude"  
+
+with ThreadPoolExecutor(max_workers=8) as executor:
+    results = list(executor.map(
+        lambda row: get_area_info(row[LON_COL], row[LAT_COL]),
+        [row for _, row in airbnb.head(5).iterrows()]
+    ))
+
+airbnb["area_code"] = zip(*results)
+
+airbnb.to_csv("airbnb_ac_week_9.csv", index=False)
+print(f"Saved {len(airbnb)} rows to airbnb_ac_week_9.csv")
+```
+
