@@ -299,5 +299,15 @@ gap_by_ward <- gap_data %>%
 head(gap_by_ward, 10)
 ```
 
+```{r}
+# Bar chart of median gap by ward
+gap_by_ward %>%
+  ggplot(aes(x = reorder(neighbourhood, median_gap), y = median_gap, fill = median_gap)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_gradient(low = "#a8dadc", high = "#1d3557") +
+  labs(x = "Ward", y = "Median price gap ($ per night)", title = "Short vs long-term rental price gap by ward")
+```
+The ward with the greatest gap between short- and long-term rental prices is Central Ward (the CBD), with a median gap of $144.57 per night (n=6426).
 
 # Compare how many AirBnBs and rental properties we have in each location - Charlie
