@@ -301,3 +301,53 @@ head(gap_by_ward, 10)
 
 
 # Compare how many AirBnBs and rental properties we have in each location - Charlie
+```{r}
+comparison <- joined_data %>%
+  group_by(area_code, area_name) %>%
+  summarise(
+    n_airbnb = n_distinct(id),
+    n_rental = mean(`Total Bonds`, na.rm = TRUE),  # already a per-area count, so average across quarters rather than sum
+    .groups = "drop"
+  ) %>%
+  arrange(desc(n_airbnb))
+
+comparison
+```
+
+```{r}
+comparison %>%
+  filter(!is.na(n_rental)) %>%
+  slice_max(n_airbnb, n = 10) %>%
+  pivot_longer(cols = c(n_airbnb, n_rental), names_to = "type", values_to = "count") %>%
+  ggplot(aes(x = reorder(area_name, count), y = count, fill = type)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(x = NULL, y = "Count", fill = "Type",
+       title = "Top 10 areas by Airbnb listings — AirBnB vs rental") +
+  scale_fill_manual(values = c("n_airbnb" = "steelblue", "n_rental" = "orange"),
+                     labels = c("n_airbnb" = "AirBnB listings", "n_rental" = "Rental bonds"))
+```
+```{r}
+comparison %>%
+  filter(!is.na(n_rental)) %>%
+  slice_max(n_rental, n = 10) %>%
+  pivot_longer(cols = c(n_airbnb, n_rental), names_to = "type", values_to = "count") %>%
+  ggplot(aes(x = reorder(area_name, count), y = count, fill = type)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(x = NULL, y = "Count", fill = "Type",
+       title = "Top 10 areas by rental bonds — AirBnB vs rental") +
+  scale_fill_manual(values = c("n_airbnb" = "steelblue", "n_rental" = "orange"),
+                     labels = c("n_airbnb" = "AirBnB listings", "n_rental" = "Rental bonds"))
+```
+```{r}
+comparison %>%
+  filter(!is.na(n_rental)) %>%
+  pivot_longer(cols = c(n_airbnb, n_rental), names_to = "type", values_to = "count") %>%
+  ggplot(aes(x = reorder(area_name, count, sum), y = count, fill = type)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  labs(x = NULL, y = "Count", fill = "Type",
+       title = "AirBnB listings vs rental bonds — all areas")
+```
+
