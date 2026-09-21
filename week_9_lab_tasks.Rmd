@@ -5,30 +5,23 @@ output: html_document
 
 table id: 123518
 stats NZ table url: https://datafinder.stats.govt.nz/table/123518-geographic-areas-table-2026/
-
 Statistical Area 2 2026,
 layer id: 123515
 
-
 https://koordinates.com/services/query/v1/vector.json?key=c301ae7a8cea42cfa1a558f4838a53a5&layer=3936&x=172.6398&y=43.5256&max_results=3&radius=20000&geometry=true&with_field_names=true
 
-
-#to install stuff
-reticulate::py_require(c("requests", "pandas"))
+#Setting up the environment installing packages
 ```{r}
 # This line sets up the Python environment automatically - must run first, don't delete
 # packages live in a local cache on each machine, not in this file, so this line tells reticulate which packages to use/build each fresh session.
 reticulate::py_require(c("pandas", "requests", "numpy"))
 ```
 
-
 ## Querying the API
-Queries the Koordinates API. We give it a longitude (x) and 
-latitude (y) and it sends back whatever data matches that location
-If the request fails for some reason (bad internet, server 
-down, etc) it just returns None
-
+Queries the Koordinates API. 
+We give it a longitude (x) and latitude (y) and it sends back data that matches that location. If the request fails for some reason (bad internet, server down, etc) it just returns None
 ```{python}
+# importing packages
 import os
 import time
 import requests
@@ -39,18 +32,22 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 API_KEY = "c301ae7a8cea42cfa1a558f4838a53a5"
 LAYER_ID = 123515
 MAX_WORKERS = 8  # Number of parallel workers querying the API simultaneously
-RADIUS = 20000
+RADIUS = 20000 # search radius in metres around the x,y point when querying the API
 
 def query_layer(x, y, max_results, layer_id=LAYER_ID, radius=RADIUS, api_key=API_KEY):
+  """Query the Koordinates API for features near a given coordinate 
+  and return the JSON response, or None if the request failed."""
+
     url = (
         f"https://koordinates.com/services/query/v1/vector.json"
         f"?key={api_key}&layer={layer_id}&x={x}&y={y}"
         f"&max_results={max_results}&radius={radius}&geometry=true&with_field_names=true"
     )
     response = requests.get(url)
-    if response.status_code == 200:
+    if response.status_code == 200: # if the request is sucessful
         print("y")
         return response.json()
+    # if unsucessful return None
     else:
         print(f"Failed to fetch data for ({x}, {y}). Status code: {response.status_code}")
         print("g")
@@ -60,8 +57,6 @@ def query_layer(x, y, max_results, layer_id=LAYER_ID, radius=RADIUS, api_key=API
 query_layer(172.6398,-43.5256,  3)
 
 ```
-
-Column we are getting: SA22026_V1_00. <-- may change this later????
 
 ## Getting the info (area code + suburb name) for the location
 Uses the query function above but pulls out just the area code and the name. 
@@ -93,14 +88,14 @@ def get_area_info(x, y):
 
 A couple tests
 ```{python}
+# lookig at area names
 code, name = get_area_info(172.5810, -43.5227)
 print(name)
 
 code, name = get_area_info(172.6362, -43.5320)  # Cathedral Square, Christchurch
 print(code, name)
 ```
-
-
+Defining things
 ```{python}
 # Define input/output file paths, directories, and configuration IDs for week 9 datasets.
 from pathlib import Path
@@ -114,13 +109,14 @@ GEO_AREAS_TABLE_CSV = DATA_DIR / "geographic_areas_table_2026.csv"
 GEO_AREAS_TABLE_ID = 123518
 ```
 
+This function geocodes all the AirBnB listings at once, excluding duplicates. It looks at every unique lat/long pair, checks if there's already a saved file from a previous run (skips anything already done), then queries the API for whatever's left. Once finished, it merges the area codes back onto the full AirBnB dataset and saves it to CSV.
 ```{python}
 # Perform parallel batch geocoding for unique coordinates using a cache to skip existing locations, then save the enriched dataset.
-
 def run_batch_geocoding(airbnb: pd.DataFrame) -> pd.DataFrame:
-    unique_coords = airbnb[["latitude", "longitude"]].drop_duplicates().reset_index(drop=True)
+    unique_coords = airbnb[["latitude", "longitude"]].drop_duplicates().reset_index(drop=True) # get lat/long dropping duplicates
 
-    if AIRBNB_WITH_AREA_OUT.exists(): # If airbnb_with_area_codes.csv exist, every future call to this function loads it first and only queries coordinates that are still missing an area code. If everything geocoded successfully, to do will be empty.
+# If airbnb_with_area_codes.csv exist, every future call to this function loads it first and only queries coordinates that are still missing an area code. If everything geocoded successfully, to do will be empty.
+    if AIRBNB_WITH_AREA_OUT.exists(): 
         cached = pd.read_csv(AIRBNB_WITH_AREA_OUT)
         done = cached.dropna(subset=["area_code"])[["latitude", "longitude", "area_code", "area_name"]].drop_duplicates()
         merged = unique_coords.merge(done, on=["latitude", "longitude"], how="left")
@@ -148,18 +144,22 @@ def run_batch_geocoding(airbnb: pd.DataFrame) -> pd.DataFrame:
                 if completed % 200 == 0:
                     print(f"{completed} / {len(todo)} done")
 
+# merge freshly-queried results back into merged, keeping cached values where they already existed
         results_df = pd.DataFrame(records)
         merged = merged.merge(results_df, on=["latitude", "longitude"], how="left", suffixes=("", "_new"))
         merged["area_code"] = merged["area_code"].combine_first(merged["area_code_new"])
         merged["area_name"] = merged["area_name"].combine_first(merged["area_name_new"])
         merged = merged.drop(columns=["area_code_new", "area_name_new"])
 
+# merge area codes back onto the full (non-deduplicated) airbnb dataset and save
     airbnb_out = airbnb.merge(merged, on=["latitude", "longitude"], how="left")
     airbnb_out.to_csv(AIRBNB_WITH_AREA_OUT, index=False)
     print(f"Saved {AIRBNB_WITH_AREA_OUT} ({airbnb_out['area_code'].notna().sum()} / {len(airbnb_out)} rows matched)")
     return airbnb_out
 ```
 
+
+Loads the cleaned Airbnb CSV and runs it through run_batch_geocoding(), which adds the area code and name to every listing based on its coordinates
 ```{python}
 # Load the cleaned Airbnb dataset from CSV and run batch geocoding to assign geographic area information.
 airbnb = pd.read_csv(AIRBNB_IN)
@@ -180,6 +180,9 @@ summary(data)
 glimpse(data)
 ```
 
+Joins the geocoded Airbnb data with the tenancy bond data on area_code and quarter, so each Airbnb listing gets matched with the long-term rental stats for its area and time period. 
+It first converts Airbnb's monthly dates into quarters and makes sure area_code is numeric (to match tenancy's format), then filters the tenancy data down to just the overall totals (Dwelling Type = "ALL", Number Of Beds = "ALL") and drops rows with an invalid location ID (-99). 
+A left join is used so every Airbnb listing is kept, even if there's no matching tenancy data for that area/quarter. The result is saved as airbnb_tenancy_joined.csv.
 ```{r}
 # Merge the airbnb_with_area_codes with tenancy_cleaned_week_8 using left join to keep all the columns. 
 
@@ -188,9 +191,9 @@ tenancy <- read_csv("week_9_datasets/tenancy_cleaned_week_8.csv")
 
 airbnb <- airbnb %>%
   mutate(
-    month_date = ym(month_year),
-    quarter = floor_date(month_date, unit = "quarter"),
-    area_code = as.numeric(area_code)
+    month_date = ym(month_year), # convert to a date
+    quarter = floor_date(month_date, unit = "quarter"), # round down to match tenancy's quarters
+    area_code = as.numeric(area_code) # match tenancy's format for the join
   )
 
 tenancy_all <- tenancy %>%
@@ -202,7 +205,7 @@ tenancy_all <- tenancy %>%
   rename(area_code = `Location Id`) %>%
   mutate(quarter = as.Date(TimeFrame))
 
-# Left join
+# Left join on area_code and quarter, keeps every Airbnb row even without a match
 joined <- airbnb %>%
   left_join(tenancy_all, by = c("area_code", "quarter"))
 
@@ -211,6 +214,7 @@ write_csv(joined, "week_9_datasets/airbnb_tenancy_joined.csv")
 ```
 
 ```{r}
+# load the finished joined dataset and check its structure
 joined_data <- read_csv('week_9_datasets/airbnb_tenancy_joined.csv')
 glimpse(joined_data)
 ```
@@ -223,7 +227,7 @@ glimpse(joined_data)
 
 •	Downloaded geographic-areas-tables-2026.csv (originally a zip file with 5 files in it, including geographic-areas-table-2026.csv) from Koordinates
 
-•	Created run_batch_geocoding(), which uses Alisha’s get_area_info() and query_layer() functions. It batch-geocoded ~4,000 unique coordinates. The function saves the result as airbnb_with_area_code.csv with a new area_code column. It also checks for existing output and only queries coordinates with missing area codes, avoiding unnecessary API calls from now on.
+•	Created run_batch_geocoding(), which uses Alisha’s get_area_info() and query_layer() functions. It batch-geocoded ~4,000 unique coordinates. The function saves the result as airbnb_with_area_codes.csv with a new area_code column. It also checks for existing output and only queries coordinates with missing area codes, avoiding unnecessary API calls from now on.
 
 •	Joined the geocoded Airbnb data with tenancy_cleaned_week_8 using a left join, keeping all Airbnb listings. It first converted Airbnb’s monthly dates into quarterly periods to match the rental data, then joined on both area_code and quarter.
 Used a left join so Airbnb listings are retained even when there is no matching rental data for their area/quarter. (Inner join will delete any data without matching rental data. Full/outer join will include tenancy rows that are NOT in chch, which is not meaningful)
@@ -258,6 +262,7 @@ median_price <- median(chch_central$price)
 
 median_price
 ```
+
 ```{r}
 # Just for comparison - what's the median price across ALL of Christchurch, not just Central?
 # if any rows have blank or missing values (NA) for the price, ignore them and calculate the median with what's left
@@ -276,13 +281,11 @@ glimpse(joined_data)
 
 Adding price_gap and filtering data
 ```{r}
-
 joined_data <- joined_data %>%
   mutate(
     rental_price_per_night_median = `Median Rent` / 7, #putting median price per week into per day
     price_gap = price - rental_price_per_night_median # calculating the price gap for each row which is Airbnb nightly price minus median long-term rent per night
   )
-
 
 # filter out rows without data (eg NA)
 gap_data <- joined_data %>%
@@ -290,9 +293,11 @@ gap_data <- joined_data %>%
 
 ```
 
-Most areas have between 1 and 2000 properties. this makes sense as sime areas have much more air bnb listings than others. This makes sense as areas like the city will be much more likely to have listings than smaller futher out areas like Aranui.
 
-Decided to only include areas with over 10 properties listed
+## suberb analysis (SA2)
+Most areas have between 1 and 2000 properties. This makes sense as sime areas have much more air bnb listings than others. This makes sense as areas like the city will be much more likely to have listings than smaller futher out areas like Aranui.
+
+Decided to only include areas with over 15 properties listed
 ```{r}
 # Summarise gap by area 
 gap_by_area <- gap_data %>%
@@ -307,15 +312,11 @@ gap_by_area <- gap_data %>%
 
 head(gap_by_area, 15)
 ```
+Even after filtering, some SA2 suburb areas (like Holmwood) are small, obscure statistical areas rather than widely-known suburbs. Tried grouping by ward instead because wards are bigger areas with higher listing counts and are more recognisable:
 
+## Ward-level analysis
 ```{r}
-gap_by_area %>%
-  arrange(area_name) %>%
-  print(n = Inf)
-```
-
-Tried with SA2 suburb areas but they were smaller areas and wards are bigger with higher numbers of listings
-```{r}
+# Summarise gap by ward
 gap_by_ward <- gap_data %>%
   group_by(neighbourhood) %>%
   summarise(
@@ -325,28 +326,44 @@ gap_by_ward <- gap_data %>%
   ) %>%
   arrange(desc(median_gap))
 
-head(gap_by_ward, 10)
+head(gap_by_ward, 15)
 ```
+Looking at the wards they look like more well known offical areas of Christchurch
 
+```{r}
+# Bar chart of median gap by ward
+gap_by_ward %>%
+  ggplot(aes(x = reorder(neighbourhood, median_gap), y = median_gap, fill = median_gap)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_gradient(low = "#a8dadc", high = "#1d3557") +
+  labs(x = "Ward", y = "Median price gap ($ per night)", title = "Short vs long-term rental price gap by ward")
+```
+**Answer:** 
+At the ward level (larger, more reliable sample sizes), Central Ward shows the largest gap between short- and long-term rental prices at $144.57/night (n=6426). 
+
+(At the smaller SA2 suburb level, Holmwood shows an even larger gap ($217.21/night, n=74), but it's a small statistical area rather than a widely-recognised suburb.)
 
 # Compare how many AirBnBs and rental properties we have in each location - Charlie
 ```{r}
+# Compare Airbnb listing counts vs rental bond counts by area
 comparison <- joined_data %>%
   group_by(area_code, area_name) %>%
   summarise(
-    n_airbnb = n_distinct(id),
+    n_airbnb = n_distinct(id), # count of unique Airbnb listings in this area
     n_rental = mean(`Total Bonds`, na.rm = TRUE),  # already a per-area count, so average across quarters rather than sum
     .groups = "drop"
   ) %>%
-  arrange(desc(n_airbnb))
+  arrange(desc(n_airbnb)) # sort areas by number of Airbnb listings
 
 comparison
 ```
 
 ```{r}
+# Bar chart comparing Airbnb listings vs rental bonds for the top 10 areas by Airbnb count
 comparison %>%
-  filter(!is.na(n_rental)) %>%
-  slice_max(n_airbnb, n = 10) %>%
+  filter(!is.na(n_rental)) %>% # drop areas with no rental bond data
+  slice_max(n_airbnb, n = 10) %>% # keep only the top 10 areas by Airbnb listing count
   pivot_longer(cols = c(n_airbnb, n_rental), names_to = "type", values_to = "count") %>%
   ggplot(aes(x = reorder(area_name, count), y = count, fill = type)) +
   geom_col(position = "dodge") +
@@ -357,9 +374,10 @@ comparison %>%
                      labels = c("n_airbnb" = "AirBnB listings", "n_rental" = "Rental bonds"))
 ```
 ```{r}
+# Bar chart comparing Airbnb listings vs rental bonds for the top 10 areas ranked by Airbnb count
 comparison %>%
-  filter(!is.na(n_rental)) %>%
-  slice_max(n_rental, n = 10) %>%
+  filter(!is.na(n_rental)) %>% # drop areas with no rental bond data
+  slice_max(n_rental, n = 10) %>% # keep only the top 10 areas by Airbnb listing count
   pivot_longer(cols = c(n_airbnb, n_rental), names_to = "type", values_to = "count") %>%
   ggplot(aes(x = reorder(area_name, count), y = count, fill = type)) +
   geom_col(position = "dodge") +
@@ -369,7 +387,9 @@ comparison %>%
   scale_fill_manual(values = c("n_airbnb" = "steelblue", "n_rental" = "orange"),
                      labels = c("n_airbnb" = "AirBnB listings", "n_rental" = "Rental bonds"))
 ```
+
 ```{r}
+# Bar chart comparing Airbnb listings vs rental bonds across ALL areas (not just top 10), sorted by combined total
 comparison %>%
   filter(!is.na(n_rental)) %>%
   pivot_longer(cols = c(n_airbnb, n_rental), names_to = "type", values_to = "count") %>%
