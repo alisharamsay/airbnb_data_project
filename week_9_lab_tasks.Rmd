@@ -358,7 +358,7 @@ comparison <- joined_data %>%
 
 comparison
 ```
-
+# filter NA bonds as these are outside of the tenancy nz scope
 ```{r}
 # Bar chart comparing Airbnb listings vs rental bonds for the top 10 areas by Airbnb count
 comparison %>%
@@ -399,4 +399,11 @@ comparison %>%
   labs(x = NULL, y = "Count", fill = "Type",
        title = "AirBnB listings vs rental bonds — all areas")
 ```
+# Summary
+In the top 10 Airbnb listings we can see that central Christchurch dominates by a large margin. The central Christchurch suburbs make up 5 out of the top 10, with central east having the most at around 400 listings. The graph also shows us how much the central suburbs have compared to the rest. There are 1563 Airbnb listings spread across the top 10 suburbs of which central suburbs make up 1128. Central suburbs also have very few rental bonds compared to Airbnb's. 
 
+The top 10 rental bond suburbs shows different areas. Although it is led by central east and north I predict this is mostly due to the larger population and apartment buildings in this area. The rest of the top 10 are full of residential areas. The more interesting part is how the all of these areas have significantly more rental bonds then Airbnb's.
+
+The last graph shows us how Airbnb's very significantly dominates the most populated areas, we can see the massive spike at the top in central suburbs. After this initial spike in the central suburbs there are almost none that have more Airbnb listings than rental bonds.
+
+Overall we can conclude that the Airbnb market and long term rental market are concentrated in different areas, other than central east and north which have large volumes of both. Airbnb significantly dominates central suburbs with long term rent has greater volumes almost everywhere else.
