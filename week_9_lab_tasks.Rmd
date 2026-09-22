@@ -407,3 +407,33 @@ The top 10 rental bond suburbs shows different areas. Although it is led by cent
 The last graph shows us how Airbnb's very significantly dominates the most populated areas, we can see the massive spike at the top in central suburbs. After this initial spike in the central suburbs there are almost none that have more Airbnb listings than rental bonds.
 
 Overall we can conclude that the Airbnb market and long term rental market are concentrated in different areas, other than central east and north which have large volumes of both. Airbnb significantly dominates central suburbs with long term rent has greater volumes almost everywhere else.
+
+
+
+
+
+
+
+
+
+## natural language description:
+1. Set up the tools
+We got an API key from Koordinates (a NZ mapping data service) and found the specific dataset we needed — Statistical Area 2 (SA2) boundaries for 2026, which is Stats NZ's way of dividing the country into small area codes (kind of like suburb-sized zones, though not always matching what people would actually call a suburb).
+
+2. Built a way to turn coordinates into area codes
+Our Airbnb data only had latitude/longitude for each listing, but our rental bond data used area codes instead. So we needed a way to convert one into the other. We wrote a function (query_layer) that sends a coordinate to the Koordinates API and gets back whatever area that point falls inside, then a second function (get_area_info) that pulls out just the two bits we actually wanted from that response — the area code and its name.
+
+3. Ran this across the whole Airbnb dataset
+Since some listings share the exact same coordinates (duplicate buildings/addresses), we only queried the API for unique coordinates rather than every single row — saving thousands of unnecessary calls. We also built in caching, so if we ever needed to re-run this, it would skip anything already done instead of starting from scratch. This function ran through multiple requests in parallel (multithreading) so it didn't take forever, and saved the results to a CSV so we'd never have to redo it.
+
+4. Joined the two datasets together
+With area codes now attached to every Airbnb listing, we could join it to the tenancy (bond) dataset, which already had its own area codes. We matched on both area code and time period — converting Airbnb's monthly data into quarters, since the rental data is reported quarterly. We used a left join so every Airbnb listing was kept, even if there wasn't a matching rental record for that area/quarter.
+
+5. Answered the three main questions:
+Median Airbnb price in Christchurch Central: Filtered to just that area code and calculated the median — came out to $239/night, based on 724 listings.
+
+Where's the biggest gap between short-term and long-term rental prices: Calculated the difference between Airbnb's nightly price and the long-term rental's price converted to a nightly rate, then compared this across areas. At the small suburb (SA2) level, Holmwood had the biggest gap, but it's a fairly obscure statistical area rather than somewhere people would recognise. So we also grouped by ward (a bigger, more well-known area type) — and by that measure, Central Ward had the largest gap ($144.57/night).
+
+Comparing Airbnb vs rental property counts by area: Counted how many Airbnb listings vs rental bonds existed in each area. Found that Airbnb listings are heavily concentrated in central Christchurch, while long-term rentals are much more spread out across the wider city — meaning the two markets are mostly operating in different areas, except in the central suburbs where both overlap.
+
+
