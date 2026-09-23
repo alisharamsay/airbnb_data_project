@@ -58,9 +58,9 @@ query_layer(172.6398,-43.5256,  3)
 
 ```
 
-## Getting the info (area code + suburb name) for the location
 Uses the query function above but pulls out just the area code and the name. 
 ```{python}
+## Getting the info (area code + suburb name) for the location
 def get_area_info(x, y):
     """returns SA22026_V1_00 value (area code) and SA22026_V1_00_NAME (suburb name) for latitude and      longitude, or returns None, None"""
     # Query the API
@@ -271,8 +271,6 @@ median(task1_data$price, na.rm = TRUE)
 Summary 21/9/2026 - Alice
 Median airbnb price in CHCH central (area code 326600) is $239 (based on 724 listings with a recorded price)
 
-
-
 # In which part of Christchurch can we observe the craziest (largest) gap between short- and long-term rental prices? - Alisha 
 ```{r}
 # Check data columns
@@ -407,7 +405,6 @@ The top 10 rental bond suburbs shows different areas. Although it is led by cent
 The last graph shows us how Airbnb's very significantly dominates the most populated areas, we can see the massive spike at the top in central suburbs. After this initial spike in the central suburbs there are almost none that have more Airbnb listings than rental bonds.
 
 Overall we can conclude that the Airbnb market and long term rental market are concentrated in different areas, other than central east and north which have large volumes of both. Airbnb significantly dominates central suburbs with long term rent has greater volumes almost everywhere else.
-
 
 
 
