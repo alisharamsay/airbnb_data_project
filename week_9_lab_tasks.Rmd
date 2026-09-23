@@ -41,8 +41,8 @@ MAX_WORKERS = 8  # Number of parallel workers querying the API simultaneously
 RADIUS = 20000 # search radius in metres around the x,y point when querying the API
 
 def query_layer(x, y, max_results, layer_id=LAYER_ID, radius=RADIUS, api_key=API_KEY):
-  """Query the Koordinates API for features near a given coordinate 
-  and return the JSON response, or None if the request failed."""
+    """Query the Koordinates API for features near a given coordinate 
+    and return the JSON response, or None if the request failed."""
 
     url = (
         f"https://koordinates.com/services/query/v1/vector.json"
@@ -121,7 +121,7 @@ This function geocodes all the AirBnB listings at once, excluding duplicates. It
 def run_batch_geocoding(airbnb: pd.DataFrame) -> pd.DataFrame:
     unique_coords = airbnb[["latitude", "longitude"]].drop_duplicates().reset_index(drop=True) # get lat/long dropping duplicates
 
-# If airbnb_with_area_codes.csv exist, every future call to this function loads it first and only queries coordinates that are still missing an area code. If everything geocoded successfully, to do will be empty.
+    # If airbnb_with_area_codes.csv exist, every future call to this function loads it first and only queries coordinates that are still missing an area code. If everything geocoded successfully, to do will be empty.
     if AIRBNB_WITH_AREA_OUT.exists(): 
         cached = pd.read_csv(AIRBNB_WITH_AREA_OUT)
         done = cached.dropna(subset=["area_code"])[["latitude", "longitude", "area_code", "area_name"]].drop_duplicates()
@@ -150,14 +150,14 @@ def run_batch_geocoding(airbnb: pd.DataFrame) -> pd.DataFrame:
                 if completed % 200 == 0:
                     print(f"{completed} / {len(todo)} done")
 
-# merge freshly-queried results back into merged, keeping cached values where they already existed
+        # merge freshly-queried results back into merged, keeping cached values where they already existed
         results_df = pd.DataFrame(records)
         merged = merged.merge(results_df, on=["latitude", "longitude"], how="left", suffixes=("", "_new"))
         merged["area_code"] = merged["area_code"].combine_first(merged["area_code_new"])
         merged["area_name"] = merged["area_name"].combine_first(merged["area_name_new"])
         merged = merged.drop(columns=["area_code_new", "area_name_new"])
 
-# merge area codes back onto the full (non-deduplicated) airbnb dataset and save
+    # merge area codes back onto the full (non-deduplicated) airbnb dataset and save
     airbnb_out = airbnb.merge(merged, on=["latitude", "longitude"], how="left")
     airbnb_out.to_csv(AIRBNB_WITH_AREA_OUT, index=False)
     print(f"Saved {AIRBNB_WITH_AREA_OUT} ({airbnb_out['area_code'].notna().sum()} / {len(airbnb_out)} rows matched)")
@@ -411,7 +411,6 @@ The top 10 rental bond suburbs shows different areas. Although it is led by cent
 The last graph shows us how Airbnb's very significantly dominates the most populated areas, we can see the massive spike at the top in central suburbs. After this initial spike in the central suburbs there are almost none that have more Airbnb listings than rental bonds.
 
 Overall we can conclude that the Airbnb market and long term rental market are concentrated in different areas, other than central east and north which have large volumes of both. Airbnb significantly dominates central suburbs with long term rent has greater volumes almost everywhere else.
-
 
 
 
