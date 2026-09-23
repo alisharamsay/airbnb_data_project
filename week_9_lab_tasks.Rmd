@@ -1,7 +1,13 @@
 ---
 title: "week_9_lab_tasks"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
+
+```{r global-options, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
 
 table id: 123518
 stats NZ table url: https://datafinder.stats.govt.nz/table/123518-geographic-areas-table-2026/
