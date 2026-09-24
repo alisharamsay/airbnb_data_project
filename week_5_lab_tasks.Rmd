@@ -210,8 +210,6 @@ Filtering the data by decreasing
 ```{r}
 # filtering data decreasing so we can get the top 10%
 sorted_data <- chch_file %>% arrange(desc(number_of_reviews))
-#filtered_data <- sort(chch_file$number_of_reviews, decreasing =TRUE) 
-#print(filtered_data)
 # Checking the data is sorted
 head(sorted_data$number_of_reviews, 40)
 
