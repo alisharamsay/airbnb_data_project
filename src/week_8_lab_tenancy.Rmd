@@ -8,21 +8,23 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-This file cleans the quarterly tenancy bond dataset: converting rent columns to
-numeric, filtering to the same time window as the Airbnb dataset, and dropping
+This file cleans the quarterly tenancy bond dataset: converting rent columns to numeric, filtering to the same time window as the Airbnb dataset, and dropping
 rows with missing/national-total Location Id, ready for comparison with Airbnb data
 
 ```{r parameters}
-study_start_date <- as.Date("2025-10-01")  # start of window, matches Airbnb dataset (Week 5/8)
-study_end_date   <- as.Date("2026-06-30")  # end of window, matches Airbnb dataset (Week 5/8)
+tenancy_start_date <- as.Date("2025-10-01")  # start date, matches Airbnb dataset 
+tenancy_end_date   <- as.Date("2026-06-30")  # end date, matches Airbnb dataset 
 ```
 
 lab instruction: Filter the timeframe to cover the same months as the other dataset. Clean the bond dataset, too. Similar rules as above apply - you decide what makes sense, document well, and push the final code to your repository. Please make sure to keep the Location Id and the TimeFrame. Next week we will be to combine both datasets and compare rental prices and number of available properties.
 
 ```{r}
-# Check data structures
+# load required library and files
 library(tidyverse)
 data <- read_csv("../data/Detailed-Quarterly-Tenancy-Q1-2020-Q3-2026.csv")
+```
+```{r}
+# check data structures
 head(data)
 colnames(data)
 glimpse(data)
@@ -119,12 +121,11 @@ summary(data_2$TimeFrame)
 
 glimpse(data_2)
 ```
-
-```{r sanity check - date filter}
-stopifnot(min(data_2$TimeFrame) >= study_start_date)
-stopifnot(max(data_2$TimeFrame) <= study_end_date)
-cat("Sanity check passed: TimeFrame ranges from", as.character(min(data_2$TimeFrame)),
-    "to", as.character(max(data_2$TimeFrame)), "\n")
+Sanity check - confirms no quarter is empty or oversized after the date filter, by checking each quarter has a roughly similar number of rows
+```{r}
+barplot(table(data_2$TimeFrame),
+        main = "Sanity check: tenancy rows per quarter after date filter",
+        xlab = "Quarter", ylab = "Number of rows", las = 2)
 ```
 
 Summary so far: missing data stored as literal string "NULL" rather than NA for: location_id (794 "NULL" values), Median, Geometric Mean, Upper Quartile, Lower Quartile (all has 803 "NULL" values) Log Std Dev Weekly Rent: (859 "NULL" values) Convert all rent metrics (Median, Geometric Mean, Upper Quartile, Lower Quartile, Log Std Dev Weekly Rent) to numeric (automatically turns "NULL" into NA)

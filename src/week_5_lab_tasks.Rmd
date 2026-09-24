@@ -15,24 +15,25 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r parameters}
-# Parameters used later in this file
-price_bin_width   <- 5000        # width of each bin when tabulating price vs frequency
-price_bin_max     <- 45000       # upper bound for the price/frequency table
-outlier_check_min <- 20000       # threshold used to flag likely-erroneous high prices
-price_clean_max   <- 1500        # upper bound kept after dropping the 9 extreme outliers
-publish_date      <- as.Date("2026-06-22")  # last Airbnb publish date, used for days-since-review
-top_pct           <- 0.1         # top proportion (10%) used for the "most-reviewed" task
+# Parameters used 
+price_bin_width   <- 5000        
+price_bin_max     <- 45000       
+outlier_check_min <- 20000       
+price_clean_max   <- 1500        
+publish_date      <- as.Date("2026-06-22")  
+top_pct           <- 0.1         
 ```
 
 Task: Filter on Christchurch data only. Use only this filtered dataset from now on. Using 'june_2026_listings.csv' first
 
 ```{r june_2026_listings}
-# loading tidyverse library
+# loading required library and read in inputs
 library(tidyverse)
 
-# Read in the June 2026 Airbnb listings dataset
 jun_26 <- read_csv('../data/june_2026_listings.csv')
+```
 
+```{r}
 # Checking the first 10 rows of the june data
 print("The first 10 rows are:")
 print(head(jun_26, 10))

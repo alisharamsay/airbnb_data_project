@@ -22,15 +22,17 @@ dataset -\> ultimate aim is going to be comparing rental prices and
 number of available properties with tenancy dataset
 
 ```{r parameters}
-price_outlier_max <- 5000  # prices at/above this are treated as data-entry errors (see Week 8 investigation)
+price_outlier_max <- 5000  
 ```
 
 ```{r}
+# load required library and file
 # load data as "data"
 library(tidyverse)
 
 data <- read_csv("../out/all_chch_listings.csv")
-
+```
+```{r}
 # summary statistics for all columns
 print(summary(data))
 ```
