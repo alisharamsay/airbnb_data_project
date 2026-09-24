@@ -12,16 +12,24 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+This file cleans the combined Christchurch Airbnb dataset (Oct 2025-Jun 2026):
+handling missing prices, removing extreme price outliers, and dropping unneeded
+columns, ready for comparison against the tenancy dataset.
+
 Week 8 instruction for Airbnb file: All_chch listings (separate datasets
 from oct 2025 to jun 2026 combined, but only for chch city). clean the
 dataset -\> ultimate aim is going to be comparing rental prices and
 number of available properties with tenancy dataset
 
+```{r parameters}
+price_outlier_max <- 5000  # prices at/above this are treated as data-entry errors (see Week 8 investigation)
+```
+
 ```{r}
 # load data as "data"
 library(tidyverse)
 
-data <- read_csv("week_8_datasets/all_chch_listings.csv")
+data <- read_csv("../out/all_chch_listings.csv")
 
 # summary statistics for all columns
 print(summary(data))
@@ -248,6 +256,12 @@ data_3 <- data_2 %>%
 # Check how many rows were dropped
 nrow(data_2) - nrow(data_3)
 ```
+Sanity check - compare histogram "before" and "after" remove outliers, to confirm the $5000 cutoff actually removed tail of extreme values
+```{r}
+par(mfrow = c(1, 2))
+hist(data_2$price, main = "Before removing outliers")
+hist(data_3$price, main = "After removing outliers")
+```
 
 ```{r}
 # 1. Check the new maximum price to ensure the errors are truly gone
@@ -455,5 +469,5 @@ After cleaning: 28780, columns: 18
 (Note: Cleaned dataset: df_cleaned)
 
 ```{r}
-write.csv(df_cleaned, file = "week_9_datasets/airbnb_cleaned_week_8.csv", row.names = FALSE)
+write.csv(df_cleaned, file = "../out/airbnb_cleaned_week_8.csv", row.names = FALSE)
 ```
