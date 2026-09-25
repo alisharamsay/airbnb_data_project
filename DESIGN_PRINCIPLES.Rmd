@@ -15,7 +15,7 @@ This document describes the data pipeline used in this DATA201 project: the inpu
 # (1) Inputs
 
 | Input | Source | Role in the pipeline |
-|------------------------|------------------------|------------------------|
+|----|----|----|
 | Nine monthly Airbnb listing CSVs in `week_5_datasets/` (October 2025–June 2026) | [Inside Airbnb](https://insideairbnb.com/get-the-data/), New Zealand extract, CC BY 4.0 | Raw short-term listing snapshots. Later filtered to Christchurch City only. |
 | `week_8_datasets/Detailed-Quarterly-Tenancy-Q1-2020-Q3-2026.csv` | [Tenancy Services](https://www.tenancy.govt.nz/about-tenancy-services/data-and-statistics/rental-bond-data/) | Raw long-term private rental bond statistics (SA2-2019 areas, quarterly). |
 | Stats NZ Statistical Area 2 2026 boundaries (Koordinates layer 123515; table 123518) | [datafinder.stats.govt.nz](https://datafinder.stats.govt.nz/table/123518-geographic-areas-table-2026/) via the Koordinates vector query API | Turns Airbnb latitude/longitude into an SA2 `area_code` so listings can be joined to tenancy rows. A local copy of `week_9_datasets/geographic-areas-table-2026.csv` is also in the repo as a reference table. |
@@ -43,7 +43,7 @@ Airbnb files were renamed after download so monthly snapshots are identifiable (
 
 The pipeline keeps raw files untouched and writes a new CSV at each stage. Week 5 builds a Christchurch Airbnb panel. Week 8 cleans that panel and the tenancy bond table independently. Week 9 attaches SA2 codes, joins the two sources, and answers three questions.
 
-```{}
+```         
 ```
 
 ## Week 5 — combine Christchurch Airbnb snapshots
