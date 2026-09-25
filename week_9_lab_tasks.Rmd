@@ -343,10 +343,14 @@ gap_by_ward %>%
   scale_fill_gradient(low = "#a8dadc", high = "#1d3557") +
   labs(x = "Ward", y = "Median price gap ($ per night)", title = "Short vs long-term rental price gap by ward")
 ```
+<<<<<<< HEAD
 **Answer:** 
 At the ward level (larger, more reliable sample sizes), Central Ward shows the largest gap between short- and long-term rental prices at $144.57/night (n=6426). 
 
 (At the smaller SA2 suburb level, Holmwood shows an even larger gap ($217.21/night, n=74), but it's a small statistical area rather than a widely-recognised suburb.)
+=======
+The ward with the greatest gap between short- and long-term rental prices is Central Ward (the CBD), with a median gap of $144.57 per night (n=6426).
+>>>>>>> a46693758be552d0f70c3a07eb191f0d0c8f53e6
 
 # Compare how many AirBnBs and rental properties we have in each location - Charlie
 ```{r}
