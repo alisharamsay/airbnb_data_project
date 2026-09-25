@@ -18,7 +18,7 @@ This document describes the data pipeline used in this DATA201 project: the inpu
 |------------------------|------------------------|------------------------|
 | Nine monthly Airbnb listing CSVs in `data/` (October 2025–June 2026) | [Inside Airbnb](https://insideairbnb.com/get-the-data/), New Zealand extract, CC BY 4.0 | Raw short-term listing snapshots. Later filtered to Christchurch City only. |
 | `data/Detailed-Quarterly-Tenancy-Q1-2020-Q3-2026.csv` | [Tenancy Services](https://www.tenancy.govt.nz/about-tenancy-services/data-and-statistics/rental-bond-data/) | Raw long-term private rental bond statistics (SA2-2019 areas, quarterly). |
-| Stats NZ Statistical Area 2 2026 boundaries (Koordinates layer 123515; table 123518) | [datafinder.stats.govt.nz](https://datafinder.stats.govt.nz/table/123518-geographic-areas-table-2026/) via the Koordinates vector query API | Turns Airbnb latitude/longitude into an SA2 `area_code` so listings can be joined to tenancy rows. A local copy of `week_9_datasets/geographic-areas-table-2026.csv` is also in the repo as a reference table. |
+| Stats NZ Statistical Area 2 2026 boundaries (Koordinates layer 123515; table 123518) | [datafinder.stats.govt.nz](https://datafinder.stats.govt.nz/table/123518-geographic-areas-table-2026/) via the Koordinates vector query API | Turns Airbnb latitude/longitude into an SA2 `area_code` so listings can be joined to tenancy rows. A local copy of `data/geographic-areas-table-2026.csv` is also in the repo as a reference table. |
 
 Airbnb files were renamed after download so monthly snapshots are identifiable (see `README.md`). The tenancy file is used as published, then filtered in code.
 
@@ -86,9 +86,9 @@ Notebook: `week_8_lab_tenancy.Rmd`.
 Notebook: `week_9_lab_tasks.Rmd`.
 
 - Set up Python through `reticulate`. `query_layer()` and `get_area_info()` call the Koordinates SA2 2026 layer (123515).
-- `run_batch_geocoding()` queries unique latitude/longitude pairs only, writes `airbnb_with_area_codes.csv`, and skips coordinates that already have an area code.
+- `run_batch_geocoding()` queries unique latitude/longitude pairs only, writes `out/airbnb_with_area_codes.csv`, and skips coordinates that already have an area code.
 - Convert Airbnb `month_year` to calendar quarter. Keep tenancy rows where `Dwelling Type == "ALL"` and `Number Of Beds == "ALL"` so there is one tenancy row per area and quarter.
-- Left-join on `area_code` and quarter (Airbnb listings are kept even without a tenancy match). Write `airbnb_tenancy_joined.csv`.
+- Left-join on `area_code` and quarter (Airbnb listings are kept even without a tenancy match). Write `out/airbnb_tenancy_joined.csv`.
 - Question 1 (Alice): median Airbnb price in Christchurch Central (`area_code` 326600).
 - Question 2 (Alisha): nightly price gap (Airbnb price minus median long-term rent / 7), summarised by SA2 and by ward.
 - Question 3 (Charlie): unique Airbnb listing counts compared with rental bond counts by area.
@@ -97,7 +97,7 @@ Notebook: `week_9_lab_tasks.Rmd`.
 
 These are practices we used in the repo, including DATA201 lecture themes of reproducible, tidy, documented wrangling.
 
-**Reproducible project layout.** Reproducible project layout. Work lives in an RStudio project (`DATA201.Rproj`). Paths are relative to the project root (`data/...`, `out/...`, `src/...`), not `setwd()`. Package versions are recorded with `renv` (`renv.lock`) so another machine can restore the same R library.
+**Reproducible project layout.** Work lives in an RStudio project (`DATA201.Rproj`). Paths are relative to the project root (`data/...`, `out/...`, `src/...`), not `setwd()`. Package versions are recorded with `renv` (`renv.lock`) so another machine can restore the same R library.
 
 **Do not edit raw data.** Monthly Airbnb files and the original tenancy CSV stay as downloaded (apart from Airbnb filename changes noted in the README). Filtering, imputation, and column drops happen in R Markdown. Each stage writes a new file rather than overwriting the raw input.
 
@@ -105,13 +105,13 @@ These are practices we used in the repo, including DATA201 lecture themes of rep
 
 **Literate programming.** Each week is an R Markdown notebook so the code, the reason for a cleaning choice, and the output sit in one place. That matches the course emphasis on documenting wrangling decisions, not only the final table.
 
-Check over this
-
 **Reducing high cost repeatable steps.** Geocoding is slow and uses an external API. `run_batch_geocoding()` loads `airbnb_with_area_codes.csv` if it exists and only queries coordinates that still lack an `area_code`, so re-knitting does not repeat completed work.
 
 **Version control and collaboration.** The project is a shared GitHub repository. The joined file `airbnb_tenancy_joined.csv` is treated as a shared product: later analysis should not `write_csv()` back to that same name.
 
 **Ethics and data management.** `host_name` was dropped as personally identifiable information that the analysis does not need. Sources, licence (CC BY 4.0 for Inside Airbnb), scrape dates, and limitations are recorded in the README datasheet, in line with course discussion of ethical reuse and attribution.
+
+**Sensitive credentials handling.** API keys are stored in a local, git-ignored `.Renviron` file and read via `os.environ`/`Sys.getenv`, rather than hardcoded in notebooks, so credentials are never committed to version control.
 
 # AI usage
 
