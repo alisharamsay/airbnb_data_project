@@ -7,19 +7,33 @@ output: html_document
 
 ## Week 5 lab - Deliverable 3
 
+This file reads the monthly Airbnb listings CSVs, filters them to Christchurch City,
+combines them into one dataset, and explores price and review patterns.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r parameters}
+# Parameters used 
+price_bin_width   <- 5000        
+price_bin_max     <- 45000       
+outlier_check_min <- 20000       
+price_clean_max   <- 1500        
+publish_date      <- as.Date("2026-06-22")  
+top_pct           <- 0.1         
 ```
 
 Task: Filter on Christchurch data only. Use only this filtered dataset from now on. Using 'june_2026_listings.csv' first
 
 ```{r june_2026_listings}
-# loading tidyverse library
+# loading required library and read in inputs
 library(tidyverse)
 
-# Read in the June 2026 Airbnb listings dataset
-jun_26 <- read_csv('week_5_datasets/june_2026_listings.csv')
+jun_26 <- read_csv('../data/june_2026_listings.csv')
+```
 
+```{r}
 # Checking the first 10 rows of the june data
 print("The first 10 rows are:")
 print(head(jun_26, 10))
@@ -34,23 +48,20 @@ print(summary(jun_26))
 unique(jun_26$neighbourhood_group)
 ```
 
+```{r}
+# Check neighbourhood_group column has Christchurch city - list all unique cities in that column
+unique(jun_26$neighbourhood_group)
+```
+
 Checking process by filtering june before full chch data
 
-```{r}
-# Checking the filter works just for june
-# Filter out so data only has Christchurch city rows and adding the month+year column
-#chch_listings <- jun_26 %>%
-#  filter(neighbourhood_group == 'Christchurch City') %>%
-#  mutate(month_year = '2026-06')
-#head(chch_listings)
-```
 
 Filtering all the data sets to Christchurch city and adding month + year column using a pipeline
 
 ```{r}
 # Takes a filename and its corresponding month_year label, applies the Christchurch City filter, and adds the month_year column.
 load_chch_listings <- function(filename, month_year) {
-  read_csv(paste0('week_5_datasets/', filename)) %>%
+  read_csv(paste0('../data/', filename)) %>%
     filter(neighbourhood_group == 'Christchurch City') %>%
     mutate(month_year = month_year)
 }
@@ -68,6 +79,13 @@ chch_mar26 <- load_chch_listings('march_2026_listings.csv', '2026-03')
 chch_apr26 <- load_chch_listings('april_2026_listings.csv', '2026-04')
 chch_may26 <- load_chch_listings('may_2026_listings.csv', '2026-05')
 chch_jun26 <- load_chch_listings('june_2026_listings.csv', '2026-06')
+```
+Sanity check: bar chart of row counts per month, check if there are missing/extra data across months - check all 9 months are loaded and filtered successfully, with a similar number of chch listings each month
+```{r}
+counts <- c(oct25=nrow(chch_oct25), nov25=nrow(chch_nov25), dec25=nrow(chch_dec25),
+            jan26=nrow(chch_jan26), feb26=nrow(chch_feb26), mar26=nrow(chch_mar26),
+            apr26=nrow(chch_apr26), may26=nrow(chch_may26), jun26=nrow(chch_jun26))
+barplot(counts, main = "Listings per month before combining", las = 2)
 ```
 
 Combining all nine monthly datasets into a single Christchurch dataset spanning October 2025 to June 2026.
@@ -113,12 +131,12 @@ Storing the combined Christchurch dataset named: all_chch_listings.csv
 
 ```{r}
 # Storing data
-write_csv(all_chch, 'week_5_datasets/all_chch_listings.csv')
+write_csv(all_chch, '../out/all_chch_listings.csv')
 ```
 
 ```{r all_chch_listings.csv tasks}
 # Checking first 10 rows of chch data
-chch_file <- read_csv('week_5_datasets/all_chch_listings.csv')
+chch_file <- read_csv('../out/all_chch_listings.csv')
 head(chch_file, 10)
 ```
 
@@ -149,7 +167,7 @@ table(price_bins)
 
 outliers <- chch_file %>%
   filter(price >20000)
-View(outliers)
+head(outliers)
 # shows 9 outliers
 ```
 
@@ -167,6 +185,7 @@ hist(chch_clean$price,
      col="blue",
      border="white")
 ```
+
 
 Task- Calculate how long ago the last review was in days (difference between scrape/publish date and last review date). Plot the distribution of this new feature.
 
@@ -230,7 +249,6 @@ print(top_prc)
 ```
 
 Showing top 10% of the data
-
 ```{r}
-head(filtered_data, n=top_prc)
+head(sorted_data, n = top_prc)
 ```
