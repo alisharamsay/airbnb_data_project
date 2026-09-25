@@ -15,9 +15,9 @@ This document describes the data pipeline used in this DATA201 project: the inpu
 # (1) Inputs
 
 | Input | Source | Role in the pipeline |
-|----|----|----|
-| Nine monthly Airbnb listing CSVs in `week_5_datasets/` (October 2025–June 2026) | [Inside Airbnb](https://insideairbnb.com/get-the-data/), New Zealand extract, CC BY 4.0 | Raw short-term listing snapshots. Later filtered to Christchurch City only. |
-| `week_8_datasets/Detailed-Quarterly-Tenancy-Q1-2020-Q3-2026.csv` | [Tenancy Services](https://www.tenancy.govt.nz/about-tenancy-services/data-and-statistics/rental-bond-data/) | Raw long-term private rental bond statistics (SA2-2019 areas, quarterly). |
+|------------------------|------------------------|------------------------|
+| Nine monthly Airbnb listing CSVs in `data/` (October 2025–June 2026) | [Inside Airbnb](https://insideairbnb.com/get-the-data/), New Zealand extract, CC BY 4.0 | Raw short-term listing snapshots. Later filtered to Christchurch City only. |
+| `data/Detailed-Quarterly-Tenancy-Q1-2020-Q3-2026.csv` | [Tenancy Services](https://www.tenancy.govt.nz/about-tenancy-services/data-and-statistics/rental-bond-data/) | Raw long-term private rental bond statistics (SA2-2019 areas, quarterly). |
 | Stats NZ Statistical Area 2 2026 boundaries (Koordinates layer 123515; table 123518) | [datafinder.stats.govt.nz](https://datafinder.stats.govt.nz/table/123518-geographic-areas-table-2026/) via the Koordinates vector query API | Turns Airbnb latitude/longitude into an SA2 `area_code` so listings can be joined to tenancy rows. A local copy of `week_9_datasets/geographic-areas-table-2026.csv` is also in the repo as a reference table. |
 
 Airbnb files were renamed after download so monthly snapshots are identifiable (see `README.md`). The tenancy file is used as published, then filtered in code.
@@ -26,18 +26,18 @@ Airbnb files were renamed after download so monthly snapshots are identifiable (
 
 **Intermediate datasets**
 
-- `week_5_datasets/all_chch_listings.csv` — nine months of Christchurch-only Airbnb listings with a `month_year` tag.
-- `week_9_datasets/airbnb_cleaned_week_8.csv` — Airbnb file after Week 8 cleaning.
-- `week_9_datasets/tenancy_cleaned_week_8.csv` — tenancy file after Week 8 cleaning (Airbnb date window; unusable location ids removed).
-- `week_9_datasets/airbnb_with_area_codes.csv` — cleaned Airbnb plus SA2 `area_code` and `area_name` from geocoding.
+- `out/all_chch_listings.csv` — nine months of Christchurch-only Airbnb listings with a `month_year` tag.
+- `out/airbnb_cleaned_week_8.csv` — Airbnb file after Week 8 cleaning.
+- `out/tenancy_cleaned_week_8.csv` — tenancy file after Week 8 cleaning (Airbnb date window; unusable location ids removed).
+- `out/airbnb_with_area_codes.csv` — cleaned Airbnb plus SA2 `area_code` and `area_name` from geocoding.
 
 **Analysis dataset**
 
-- `week_9_datasets/airbnb_tenancy_joined.csv` — left-joined Airbnb listings and area-level tenancy totals by SA2 and quarter.
+- `out/airbnb_tenancy_joined.csv` — left-joined Airbnb listings and area-level tenancy totals by SA2 and quarter.
 
 **Reports**
 
-- `week_5_lab_tasks.Rmd`, `week_8_lab_airbnb.Rmd`, `week_8_lab_tenancy.Rmd`, `week_9_lab_tasks.Rmd` — literate notebooks with plots, cleaning notes, and the three Week 9 answers (median price in Christchurch Central; largest short- vs long-term price gap; Airbnb listing counts vs rental bonds by area).
+- `src/week_5_lab_tasks.Rmd`, `src/week_8_lab_airbnb.Rmd`, `src/week_8_lab_tenancy.Rmd`, `src/week_9_lab_tasks.Rmd` — literate notebooks with plots, cleaning notes, and the three Week 9 answers (median price in Christchurch Central; largest short- vs long-term price gap; Airbnb listing counts vs rental bonds by area).
 
 # (3) Main steps
 
@@ -54,20 +54,20 @@ Notebook: `week_5_lab_tasks.Rmd`.
 - Write `load_chch_listings()`: read a monthly CSV, keep `neighbourhood_group == "Christchurch City"`, and add a `month_year` column.
 - Apply that function to all nine months (October 2025–June 2026) and `bind_rows()` them into `all_chch`.
 - Run exploratory checks: numeric summaries, frequency tables for `room_type` and `neighbourhood`, and missing-value counts.
-- Write `week_5_datasets/all_chch_listings.csv`.
+- Write `data/all_chch_listings.csv`.
 - Plot the price distribution (including outliers), calculate days since last review, and inspect the top 10% of listings by number of reviews.
 
 ## Week 8 — clean Airbnb
 
 Notebook: `week_8_lab_airbnb.Rmd`.
 
-- Read `week_8_datasets/all_chch_listings.csv` and inspect with `summary()`, `glimpse()`, missingness, and a price histogram.
+- Read `data/all_chch_listings.csv` and inspect with `summary()`, `glimpse()`, missingness, and a price histogram.
 - Add `scrape_date` from each snapshot’s actual scrape day and compute `days_since_review`.
 - Impute missing prices for December 2025–February 2026 only when a listing’s price is the same in every other month it appears.
 - Drop listings with price of \$5,000 or more (treated as errors); leave remaining price NAs as NA.
 - Drop `license` (entirely missing), `neighbourhood_group` (only Christchurch City), and `host_name` (personally identifiable and unused).
 - Recode `reviews_per_month` NA to 0 where there is no last review. Confirm that repeated listing IDs are monthly time-series records, not accidental duplicates.
-- Write `week_9_datasets/airbnb_cleaned_week_8.csv`.
+- Write `out/airbnb_cleaned_week_8.csv`.
 
 ## Week 8 — clean tenancy
 
@@ -79,7 +79,7 @@ Notebook: `week_8_lab_tenancy.Rmd`.
 - Replace `"NULL"` in `Location Id` with NA and drop those rows (privacy suppression when counts are too small; the IDs cannot be recovered).
 - Drop `Location Id == "-99"` (national totals that inflate means).
 - Check for duplicates and for extreme rents; keep the high rents as plausible (large dwellings, low counts).
-- Write `week_9_datasets/tenancy_cleaned_week_8.csv`.
+- Write `out/tenancy_cleaned_week_8.csv`.
 
 ## Week 9 — geocode, join, and analyse
 
@@ -97,7 +97,7 @@ Notebook: `week_9_lab_tasks.Rmd`.
 
 These are practices we used in the repo, including DATA201 lecture themes of reproducible, tidy, documented wrangling.
 
-**Reproducible project layout.** Work lives in an RStudio project (`DATA201.Rproj`). Paths are relative to the project root (`week_5_datasets/...`), not `setwd()`. Package versions are recorded with `renv` (`renv.lock`) so another machine can restore the same R library.
+**Reproducible project layout.** Reproducible project layout. Work lives in an RStudio project (`DATA201.Rproj`). Paths are relative to the project root (`data/...`, `out/...`, `src/...`), not `setwd()`. Package versions are recorded with `renv` (`renv.lock`) so another machine can restore the same R library.
 
 **Do not edit raw data.** Monthly Airbnb files and the original tenancy CSV stay as downloaded (apart from Airbnb filename changes noted in the README). Filtering, imputation, and column drops happen in R Markdown. Each stage writes a new file rather than overwriting the raw input.
 
