@@ -55,7 +55,6 @@ unique(jun_26$neighbourhood_group)
 
 Checking process by filtering june before full chch data
 
-
 Filtering all the data sets to Christchurch city and adding month + year column using a pipeline
 
 ```{r}
@@ -141,8 +140,6 @@ head(chch_file, 10)
 ```
 
 Task Reproduce the workflow and the plots in R Plot the distribution of price as a histogram for christchurch city
-
-(also said to plot for all NZ but data has gotten rid of NZ?) (also said special task to plot both in the same plot but..?)
 
 ```{r plot distribution of price as a histogram for Christchurch city}
 hist(chch_file$price,
