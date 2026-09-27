@@ -84,8 +84,8 @@ negative_rows
 ```
 
 Summary statistics: price: median price is \$205, but the max is
-\$43,654 (a massive extreme outlier? error?). Price histogram: right
-skewed, due to extreme price outliers
+$43,654 (a massive extreme outlier? error?). 
+Price histogram: right skewed, due to extreme price outliers
 
 license: entirely NA (28,795 missing values) -\> consider dropping if
 doesn't need this column
@@ -355,7 +355,7 @@ Price column: 10158 NAs
 
 minimum_nights: 37 NAs
 
-TO DECIDE: MINIMUM_NIGHTS NAs ?impute with median : min-1, max-365,
+TO DECIDE: MINIMUM_NIGHTS NAs? impute with median : min-1, max-365,
 median-1, mean - 1.788
 
 COLUMNS to drop: neighbourhood group only has 1 uniqe value so can't
