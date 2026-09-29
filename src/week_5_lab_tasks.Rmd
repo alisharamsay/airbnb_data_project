@@ -2,9 +2,14 @@
 title: "Week_5_lab"
 author: "CHAKAR"
 date: "2026-07-31"
-output: html_document
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
 ---
-
+```{r global-options, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
 ## Week 5 lab - Deliverable 3
 
 This file reads the monthly Airbnb listings CSVs, filters them to Christchurch City,
@@ -196,7 +201,7 @@ class(chch_file$last_review)
 head(chch_file$last_review)
 ```
 
-```{r review days}
+```{r review days1}
 
 # Using last publish date on airbnb listings website, which is 22 Jun 2026
 
@@ -207,7 +212,7 @@ chch_file$difference_days
 head(chch_file) # Check the new column difference_days exists
 ```
 
-```{r review_days}
+```{r review days2}
 hist(chch_file$difference_days,
      main = "Distribution of Days since Last Review",
      xlab = "Days since last Review",

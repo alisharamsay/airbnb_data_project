@@ -5,8 +5,8 @@ date: "2026-09-08"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r global-options, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 This file cleans the quarterly tenancy bond dataset: converting rent columns to numeric, filtering to the same time window as the Airbnb dataset, and dropping
 rows with missing/national-total Location Id, ready for comparison with Airbnb data
