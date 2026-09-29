@@ -122,7 +122,7 @@ summary(data_2$TimeFrame)
 glimpse(data_2)
 ```
 Sanity check - confirms no quarter is empty or oversized after the date filter, by checking each quarter has a roughly similar number of rows
-```{r}
+```{r fig.height=4, fig.width=7, out.width="100%"}
 barplot(table(data_2$TimeFrame),
         main = "Sanity check: tenancy rows per quarter after date filter",
         xlab = "Quarter", ylab = "Number of rows", las = 2)
