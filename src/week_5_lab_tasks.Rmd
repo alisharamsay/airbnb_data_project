@@ -18,16 +18,17 @@ This file reads the monthly Airbnb listings CSVs, filters them to Christchurch C
 combines them into one dataset, and explores price and review patterns.
 
 ```{r parameters}
-# Parameters used 
+# Parameters used later in this file
 price_bin_width   <- 5000        
 price_bin_max     <- 45000       
 outlier_check_min <- 20000       
-price_clean_max   <- 1500        
-publish_date      <- as.Date("2026-06-22")  
-top_pct           <- 0.1         
+price_clean_max   <- 1500        # upper bound kept after dropping the 9 extreme outliers (EDA decision, see below)
+top_pct           <- 0.1         # top proportion (10%) used for the "most-reviewed" task
 ```
 
 Task: Filter on Christchurch data only. Use only this filtered dataset from now on. Using 'june_2026_listings.csv' first
+
+-----------
 
 ```{r june_2026_listings}
 # loading required library and read in inputs
@@ -72,29 +73,35 @@ load_chch_listings <- function(filename, month_year) {
 Applying the load_chch_listings function to each month's dataset, filtering to Christchurch City and tagging each with its month_year.
 
 ```{r}
-chch_oct25 <- load_chch_listings('october_2025_listings.csv', '2025-10')
-chch_nov25 <- load_chch_listings('november_2025_listings.csv', '2025-11')
-chch_dec25 <- load_chch_listings('december_2025_listings.csv', '2025-12')
-chch_jan26 <- load_chch_listings('january_2026_listings.csv', '2026-01')
-chch_feb26 <- load_chch_listings('february_2026_listings.csv', '2026-02')
-chch_mar26 <- load_chch_listings('march_2026_listings.csv', '2026-03')
-chch_apr26 <- load_chch_listings('april_2026_listings.csv', '2026-04')
-chch_may26 <- load_chch_listings('may_2026_listings.csv', '2026-05')
-chch_jun26 <- load_chch_listings('june_2026_listings.csv', '2026-06')
+# CHANGED (Week 10 automation): auto-discover every "*_listings.csv" file in data/,
+
+listing_files <- list.files("../data", pattern = "_listings\\.csv$", full.names = FALSE)
+
+month_lookup <- c(january = 1, february = 2, march = 3, april = 4, may = 5, june = 6,
+                   july = 7, august = 8, september = 9, october = 10, november = 11, december = 12)
+
+get_month_year <- function(filename) {
+  parts <- strsplit(filename, "_")[[1]]
+  sprintf("%s-%02d", parts[2], month_lookup[[tolower(parts[1])]])
+}
+
+chch_by_month <- lapply(listing_files, function(f) load_chch_listings(f, get_month_year(f)))
+names(chch_by_month) <- sapply(listing_files, get_month_year)
+
+# publish_date is now the last day of the most recent month found in data/, computed 
+publish_date <- ceiling_date(max(ym(names(chch_by_month))), "month") - days(1)
 ```
-Sanity check: bar chart of row counts per month, check if there are missing/extra data across months - check all 9 months are loaded and filtered successfully, with a similar number of chch listings each month
+Sanity check: bar chart of row counts per month, check if there are missing/extra data across months - check every month is loaded and filtered successfully, with a similar number of chch listings each month
 ```{r}
-counts <- c(oct25=nrow(chch_oct25), nov25=nrow(chch_nov25), dec25=nrow(chch_dec25),
-            jan26=nrow(chch_jan26), feb26=nrow(chch_feb26), mar26=nrow(chch_mar26),
-            apr26=nrow(chch_apr26), may26=nrow(chch_may26), jun26=nrow(chch_jun26))
+counts <- sapply(chch_by_month, nrow)
 barplot(counts, main = "Listings per month before combining", las = 2)
 ```
 
-Combining all nine monthly datasets into a single Christchurch dataset spanning October 2025 to June 2026.
+Combining all monthly datasets found in data/ into a single Christchurch dataset.
 
 ```{r}
 # Row bind all monthly Christchurch datasets into one combined dataset
-all_chch <- bind_rows(chch_oct25, chch_nov25, chch_dec25, chch_jan26, chch_feb26, chch_mar26, chch_apr26, chch_may26, chch_jun26)
+all_chch <- bind_rows(chch_by_month)
 
 ```
 
@@ -201,9 +208,9 @@ head(chch_file$last_review)
 
 ```{r review days1, include=FALSE}
 
-# Using last publish date on airbnb listings website, which is 22 Jun 2026
+# Using last publish date on airbnb listings website (see 'publish_date' parameter at top of file)
+# CHANGED (Week 10 automation): removed the duplicate hardcoded date that was here - it now uses the single 'publish_date' parameter defined once at the top of the file.
 
-publish_date <- as.Date("2026-06-22")
 chch_file$difference_days <- as.numeric(publish_date - chch_file$last_review) # create a new column "difference_days"
 chch_file$difference_days
 

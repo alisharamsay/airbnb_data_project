@@ -13,7 +13,7 @@ This repository contains Airbnb data that has been renamed and transformed for t
 
 
 ## Data Dictionary
-Source: Inside Airbnb - New Zealand listings.csv (monthly snapshots, Oct 2025 - June 2026)
+Source: Inside Airbnb - New Zealand listings.csv (monthly snapshots, jul 2025 - June 2026)
 
 This describes the columns in the combined dataset (all_chch), which is 
 filtered to Christchurch City only and concatenated across all 9 monthly snapshots.
