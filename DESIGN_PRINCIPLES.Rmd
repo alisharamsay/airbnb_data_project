@@ -38,6 +38,7 @@ Airbnb files were renamed after download so monthly snapshots are identifiable (
 **Reports**
 
 - `src/week_5_lab_tasks.Rmd`, `src/week_8_lab_airbnb.Rmd`, `src/week_8_lab_tenancy.Rmd`, `src/week_9_lab_tasks.Rmd` — literate notebooks with plots, cleaning notes, and the three Week 9 answers (median price in Christchurch Central; largest short- vs long-term price gap; Airbnb listing counts vs rental bonds by area).
+- `week_10_presentations/week_5_lab_tasks.pdf, week_8_lab_airbnb.pdf, week_8_lab_tenancy.pdf, week_9_lab_tasks.pdf` — knitted PDF versions of the notebooks above, produced for presentation purposes.
 
 # (3) Main steps
 
