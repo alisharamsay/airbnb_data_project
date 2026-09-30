@@ -1,8 +1,0 @@
----
-title: "week_10_lab_changes"
-output: html_document
----
-
-Changes we have made:
-
-- deleted empty data201.R file
