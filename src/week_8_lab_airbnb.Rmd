@@ -22,6 +22,7 @@ dataset -\> ultimate aim is going to be comparing rental prices and
 number of available properties with tenancy dataset
 
 ```{r parameters}
+# EDA decision: prices at/above this are treated as data-entry errors
 price_outlier_max <- 5000  
 ```
 
@@ -103,23 +104,9 @@ values to include the day the scrape date was done (from the website).
 
 ```{r}
 data_1 <- data %>%
-  mutate( 
-    # Assign the exact scrape date based on the month
-    scrape_date = case_when(
-      month_year == "2025-10" ~ ymd("2025-10-05"),
-      month_year == "2025-11" ~ ymd("2025-11-07"),
-      month_year == "2025-12" ~ ymd("2025-12-11"),
-      month_year == "2026-01" ~ ymd("2026-01-16"),
-      month_year == "2026-02" ~ ymd("2026-02-13"),
-      month_year == "2026-03" ~ ymd("2026-03-17"),
-      month_year == "2026-04" ~ ymd("2026-04-16"),
-      month_year == "2026-05" ~ ymd("2026-05-23"),
-      month_year == "2026-06" ~ ymd("2026-06-19"),
-      TRUE ~ NA_Date_
-    ),
-    # Convert last_review into a proper Date type directly (no extra column needed!)
+  mutate(
+    scrape_date = ceiling_date(ym(month_year), "month") - days(1),  # last day of that row's month
     last_review = ymd(last_review),
-    # Calculate days since review using the updated last_review column
     days_since_review = as.numeric(scrape_date - last_review)
   )
 
@@ -129,11 +116,8 @@ negative_rows <- data_1 %>%
 print(negative_rows)
 ```
 
-Even after matching the scrape dates with the exact publication times,
-1745 negative values remain in days_since_review column. (So these
-reviews were posted in the days right after each monthly data
-collection, counted as active listing. So leave these negative days for
-now)
+CHANGED WEEK 10: scrape_date is now the last day of
+each listing's month
 
 DEAL with price column first -\> extreme outliers + 10667 missing values
 Check Price inconsistencies
@@ -184,7 +168,6 @@ observed. Their title stayed 100% identical.
 
 TRUE (582 listings): For 582 properties, the host did change their
 listing title at least once during your dataset
-
 ```{r}
 # 1. Check price consistency for each listing across available months
 price_consistency <- data_1 %>%
@@ -205,13 +188,17 @@ stable_price_lookup <- price_consistency %>%
   filter(unique_prices == 1) %>%
   select(id, consistent_price) 
 
+fully_missing_months <- missing_by_month %>%
+  filter(pct_missing == 100) %>%
+  pull(month_year)
+
 # Impute prices safely using ifelse() to prevent type mismatch crashes
 data_2 <- data_1 %>%
   left_join(stable_price_lookup, by = "id") %>%
   mutate(
-    # If price is missing AND it matches the target months, pull from consistent_price
+    # If price is missing AND it matches a fully-missing-price month, pull from consistent_price
     price = ifelse(
-      is.na(price) & month_year %in% c("2025-12", "2026-01", "2026-02"), 
+      is.na(price) & month_year %in% fully_missing_months, 
       consistent_price, 
       price
     )

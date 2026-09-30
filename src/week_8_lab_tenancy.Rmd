@@ -12,8 +12,12 @@ This file cleans the quarterly tenancy bond dataset: converting rent columns to 
 rows with missing/national-total Location Id, ready for comparison with Airbnb data
 
 ```{r parameters}
-tenancy_start_date <- as.Date("2025-10-01")  # start date, matches Airbnb dataset 
-tenancy_end_date   <- as.Date("2026-06-30")  # end date, matches Airbnb dataset 
+library(tidyverse)
+tenancy_start_date <- as.Date("2025-10-01")  # start date, matches Airbnb dataset
+
+airbnb_months <- read_csv("../out/all_chch_listings.csv", show_col_types = FALSE)$month_year
+latest_month  <- max(ym(airbnb_months))
+tenancy_end_date <- ceiling_date(latest_month, "month") - days(1)  # last day of the latest month present in the Airbnb data
 ```
 
 lab instruction: Filter the timeframe to cover the same months as the other dataset. Clean the bond dataset, too. Similar rules as above apply - you decide what makes sense, document well, and push the final code to your repository. Please make sure to keep the Location Id and the TimeFrame. Next week we will be to combine both datasets and compare rental prices and number of available properties.
@@ -112,9 +116,9 @@ summary(data_1)
 Airbnb dataset covers October 2025 to June 2026. Filter tenancy dataset so it uses the exact same timeframe window
 
 ```{r}
-# Filter the tenancy dataset to match the Airbnb window (Oct 2025 - June 2026)
+# Filter the tenancy dataset to match the Airbnb window (see parameters above)
 data_2 <- data_1 %>%
-  filter(TimeFrame >= as.Date("2025-10-01") & TimeFrame <= as.Date("2026-06-30"))
+  filter(TimeFrame >= tenancy_start_date & TimeFrame <= tenancy_end_date)
 
 # Quick check of the date range to make sure it worked
 summary(data_2$TimeFrame)
