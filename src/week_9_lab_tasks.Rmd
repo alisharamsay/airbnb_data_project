@@ -183,12 +183,14 @@ library(tidyverse)
 library(lubridate)
 
 data <- read_csv('../out/airbnb_with_area_codes.csv')
+
+n_unique_coords <- nrow(distinct(data, latitude, longitude))
 ```
 ```{r}
 summary(data)
 ```
 Sanity check to check if any listings failed to geocode (before join): if every listing matched area code on tenancy dataset, there will only be 1 bar
-```{r}
+```{r, fig.align="center"}
 match_status <- ifelse(is.na(data$area_code), "No area code", "Matched")
 barplot(table(match_status),
         main = "Sanity check: how many listings got a matched area code?",
@@ -255,7 +257,7 @@ glimpse(joined_data)
 
 •	Downloaded geographic-areas-tables-2026.csv (originally a zip file with 5 files in it, including geographic-areas-table-2026.csv) from Koordinates
 
-•	Created run_batch_geocoding(), which uses Alisha’s get_area_info() and query_layer() functions. It batch-geocoded ~4,000 unique coordinates. The function saves the result as airbnb_with_area_codes.csv with a new area_code column. It also checks for existing output and only queries coordinates with missing area codes, avoiding unnecessary API calls from now on.
+•	Created run_batch_geocoding(), which uses Alisha’s get_area_info() and query_layer() functions. It batch-geocoded `r n_unique_coords` unique coordinates. The function saves the result as airbnb_with_area_codes.csv with a new area_code column. It also checks for existing output and only queries coordinates with missing area codes, avoiding unnecessary API calls from now on.
 
 •	Joined the geocoded Airbnb data with tenancy_cleaned_week_8 using a left join, keeping all Airbnb listings. It first converted Airbnb’s monthly dates into quarterly periods to match the rental data, then joined on both area_code and quarter.
 Used a left join so Airbnb listings are retained even when there is no matching rental data for their area/quarter. (Inner join will delete any data without matching rental data. Full/outer join will include tenancy rows that are NOT in chch, which is not meaningful)
@@ -282,7 +284,8 @@ head(chch_central)
 ```
 ```{r}
 # Check how many listings we actually got 
-nrow(chch_central)
+n_chch_central_listings <- nrow(chch_central)
+n_chch_central_listings
 ```
 ```{r}
 # Calculate the median price
@@ -297,7 +300,7 @@ median_price
 median(task1_data$price, na.rm = TRUE)
 ```
 Summary 21/9/2026
-Median airbnb price in CHCH central (area code 326600) is $239 (based on 724 listings with a recorded price)
+Median airbnb price in CHCH central (area code 326600) is $`r median_price` (based on `r n_chch_central_listings` listings with a recorded price)
 
 # In which part of Christchurch can we observe the craziest (largest) gap between short- and long-term rental prices? 
 ```{r}
@@ -321,7 +324,7 @@ gap_data <- joined_data %>%
 
 
 ## suberb analysis (SA2)
-Most areas have between 1 and 2000 properties. This makes sense as sime areas have much more air bnb listings than others. This makes sense as areas like the city will be much more likely to have listings than smaller futher out areas like Aranui.
+Most areas have between 1 and 2,000 properties. This makes sense as sime areas have much more air bnb listings than others. This makes sense as areas like the city will be much more likely to have listings than smaller futher out areas like Aranui.
 
 Decided to only include areas with over 15 properties listed
 ```{r}
@@ -337,6 +340,12 @@ gap_by_area <- gap_data %>%
   filter(n >= 15) # excludes areas with too few listings for the median to be reliable
 
 head(gap_by_area, 15)
+
+# Save the top SA2 suburb's values
+top_suburb <- gap_by_area[1, ]
+top_suburb_name <- top_suburb$area_name
+top_suburb_gap <- round(top_suburb$median_gap, 2)
+top_suburb_n <- top_suburb$n
 ```
 Even after filtering, some SA2 suburb areas (like Holmwood) are small, obscure statistical areas rather than widely-known suburbs. Tried grouping by ward instead because wards are bigger areas with higher listing counts and are more recognisable:
 
@@ -353,6 +362,11 @@ gap_by_ward <- gap_data %>%
   arrange(desc(median_gap))
 
 head(gap_by_ward, 15)
+
+# Save Central Ward's values
+central_ward <- gap_by_ward %>% filter(neighbourhood == "Central Ward")
+central_ward_gap <- round(central_ward$median_gap, 2)
+central_ward_n <- central_ward$n
 ```
 Looking at the wards they look like more well known offical areas of Christchurch
 
@@ -365,14 +379,10 @@ gap_by_ward %>%
   scale_fill_gradient(low = "#a8dadc", high = "#1d3557") +
   labs(x = "Ward", y = "Median price gap ($ per night)", title = "Short vs long-term rental price gap by ward")
 ```
-<<<<<<< HEAD
 **Answer:** 
-At the ward level (larger, more reliable sample sizes), Central Ward shows the largest gap between short- and long-term rental prices at $144.57/night (n=6426). 
+At the ward level (larger, more reliable sample sizes), `r central_ward$neighbourhood` shows the largest gap between short- and long-term rental prices at $`r central_ward_gap`/night (n=`r central_ward_n`).
 
-(At the smaller SA2 suburb level, Holmwood shows an even larger gap ($217.21/night, n=74), but it's a small statistical area rather than a widely-recognised suburb.)
-=======
-The ward with the greatest gap between short- and long-term rental prices is Central Ward (the CBD), with a median gap of $144.57 per night (n=6426).
->>>>>>> a46693758be552d0f70c3a07eb191f0d0c8f53e6
+(At the smaller SA2 suburb level, `r top_suburb_name` shows an even larger gap ($`r top_suburb_gap`/night, n=`r top_suburb_n`), but it's a small statistical area rather than a widely-recognised suburb.)
 
 # Compare how many AirBnBs and rental properties we have in each location
 ```{r}
@@ -387,6 +397,14 @@ comparison <- joined_data %>%
   arrange(desc(n_airbnb)) # sort areas by number of Airbnb listings
 
 comparison
+
+# Save values for the top-10-by-Airbnb
+top10_airbnb <- comparison %>% slice_max(n_airbnb, n = 10)
+
+n_central_in_top10 <- sum(str_detect(top10_airbnb$area_name, "^Christchurch Central"))
+central_east_n <- comparison %>% filter(area_name == "Christchurch Central-East") %>% pull(n_airbnb)
+top10_airbnb_total <- sum(top10_airbnb$n_airbnb)
+top10_airbnb_central_total <- top10_airbnb %>% filter(str_detect(area_name, "^Christchurch Central")) %>% pull(n_airbnb) %>% sum()
 ```
 # filter NA bonds as these are outside of the tenancy nz scope
 ```{r}
@@ -430,7 +448,7 @@ comparison %>%
        title = "AirBnB listings vs rental bonds — all areas")
 ```
 # Summary
-In the top 10 Airbnb listings we can see that central Christchurch dominates by a large margin. The central Christchurch suburbs make up 5 out of the top 10, with central east having the most at around 400 listings. The graph also shows us how much the central suburbs have compared to the rest. There are 1563 Airbnb listings spread across the top 10 suburbs of which central suburbs make up 1128. Central suburbs also have very few rental bonds compared to Airbnb's. 
+In the top 10 Airbnb listings we can see that central Christchurch dominates by a large margin. The central Christchurch suburbs make up `r n_central_in_top10` out of the top 10, with central east having the most at around `r central_east_n` listings. The graph also shows us how much the central suburbs have compared to the rest. There are `r top10_airbnb_total` Airbnb listings spread across the top 10 suburbs of which central suburbs make up `r top10_airbnb_central_total`. Central suburbs also have very few rental bonds compared to Airbnb's.
 
 The top 10 rental bond suburbs shows different areas. Although it is led by central east and north I predict this is mostly due to the larger population and apartment buildings in this area. The rest of the top 10 are full of residential areas. The more interesting part is how the all of these areas have significantly more rental bonds then Airbnb's.
 
@@ -453,12 +471,10 @@ With area codes attached to each Airbnb listing, we matched on area code and tim
 
 5. Answered the three main questions:
 Median Airbnb price in Christchurch Central:
-Filtered to just that area code and calculated the median — came out to $239/night, based on 724 listings.
+Filtered to just that area code and calculated the median — came out to $`r median_price`/night, based on `r n_chch_central_listings` listings.
 
 Where's the biggest gap between short-term and long-term rental prices: 
-We calculated the difference between Airbnb's nightly price and the long-term rental's price (converted to nightly), then compared this across different areas. At the small suburb (SA2) level, Holmwood had the biggest gap, but most od the SA's were rather small and not well known. So we also grouped by wards and found thar the Central Ward had the largest gap ($144.57/night).
+We calculated the difference between Airbnb's nightly price and the long-term rental's price (converted to nightly), then compared this across different areas. At the small suburb (SA2) level, `r top_suburb_name` had the biggest gap, but most of the SA2s were rather small and not well known. So we also grouped by wards and found that the Central Ward had the largest gap ($`r central_ward_gap`/night).
 
 Comparing Airbnb vs rental property counts by area: 
 Counted how many Airbnb listings compared to how many rental bonds existed in each area. We found that Airbnb listings are heavily concentrated in central Christchurch, while long-term rentals are much more spread out across the wider city — meaning the two markets are mostly operating in different areas, except in the central suburbs where both overlap.
-
-
