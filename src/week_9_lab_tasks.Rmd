@@ -265,7 +265,7 @@ Used a left join so Airbnb listings are retained even when there is no matching 
 Note merged data assigned variable name: joined_data 
 Heads up airbnb_tenancy_joined.csv is the finished joined data: joined_data <- read_csv('week_9_datasets/airbnb_tenancy_joined.csv'. So mess with joined_data however you want for your part. Just not write_csv() back to that exact filename (hopefully we won't have to write another csv file but just in case) otherwise will overwrite it for everyone. If we need to save our own version, give it a totally different name, like price_gap.csv or something so it doesn't get confused with the original.
 
-# What’s the median AirBnB price in Christchurch Central (Location ID 326600) - Alice
+# What’s the median AirBnB price in Christchurch Central (Location ID 326600)
 
 ```{r}
 task1_data <- joined_data
@@ -296,10 +296,10 @@ median_price
 # if any rows have blank or missing values (NA) for the price, ignore them and calculate the median with what's left
 median(task1_data$price, na.rm = TRUE)
 ```
-Summary 21/9/2026 - Alice
+Summary 21/9/2026
 Median airbnb price in CHCH central (area code 326600) is $239 (based on 724 listings with a recorded price)
 
-# In which part of Christchurch can we observe the craziest (largest) gap between short- and long-term rental prices? - Alisha 
+# In which part of Christchurch can we observe the craziest (largest) gap between short- and long-term rental prices? 
 ```{r}
 # Check data columns
 glimpse(joined_data)
@@ -374,7 +374,7 @@ At the ward level (larger, more reliable sample sizes), Central Ward shows the l
 The ward with the greatest gap between short- and long-term rental prices is Central Ward (the CBD), with a median gap of $144.57 per night (n=6426).
 >>>>>>> a46693758be552d0f70c3a07eb191f0d0c8f53e6
 
-# Compare how many AirBnBs and rental properties we have in each location - Charlie
+# Compare how many AirBnBs and rental properties we have in each location
 ```{r}
 # Compare Airbnb listing counts vs rental bond counts by area
 comparison <- joined_data %>%
@@ -437,8 +437,6 @@ The top 10 rental bond suburbs shows different areas. Although it is led by cent
 The last graph shows us how Airbnb's very significantly dominates the most populated areas, we can see the massive spike at the top in central suburbs. After this initial spike in the central suburbs there are almost none that have more Airbnb listings than rental bonds.
 
 Overall we can conclude that the Airbnb market and long term rental market are concentrated in different areas, other than central east and north which have large volumes of both. Airbnb significantly dominates central suburbs with long term rent has greater volumes almost everywhere else.
-
-
 
 ## natural language description:
 1. Set up the tools
