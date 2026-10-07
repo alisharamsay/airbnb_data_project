@@ -2,6 +2,8 @@
 This project analyses Christchurch Airbnb listing trends from Oct 2025-June 2026 using data 
 from Inside Airbnb, combining 9 monthly snapshots into a single dataset for exploratory analysis.
 
+This project requires an API key from Koordinates to run.
+
 **Team members:** Alice Kuo, Charlie Harris and Alisha Ramsay
 
 ## Airbnb Dataset Analysis
@@ -10,7 +12,6 @@ This repository contains Airbnb data that has been renamed and transformed for t
 **Original Source** Inside Airbnb (https://insideairbnb.com/get-the-data/)
 **License** This data is licensed under a [Creative Commons Attribution 4.0 International License (CCBY 4.0)](https://creativecommons.org)
 **Modifications** The original CSV dataset files were downloaded to "Week_5_datasets" folder and filenames were changed to fit the project.
-
 
 ## Data Dictionary
 Source: Inside Airbnb - New Zealand listings.csv (monthly snapshots, jul 2025 - June 2026)
