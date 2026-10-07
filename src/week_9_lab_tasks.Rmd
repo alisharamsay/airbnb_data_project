@@ -246,7 +246,7 @@ cat("Sanity check passed: joined has the same number of rows as airbnb (",
 joined_data <- read_csv('../out/airbnb_tenancy_joined.csv')
 glimpse(joined_data)
 ```
-17/9/2026 - Alice
+
 •	Dropped rows with location ID -99 from the Week 8 tenancy file and filtered to keep only rows where Dwelling Type == "ALL" and Number Of Beds == "ALL". (This makes sure there is only 1 row per suburb and quarter, which prevents our Airbnb listings from getting duplicated when we merge the files.)
 
 •	Created week_9_datasets folder, which contains the two cleaned Week 8 files: Airbnb_cleaned_week_8 and tenancy_cleaned_week_8.
