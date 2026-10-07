@@ -31,14 +31,15 @@ price_outlier_max <- 5000
 library(tidyverse)
 
 data <- read_csv("../out/all_chch_listings.csv")
+n_rows_raw <- nrow(data)
+n_cols_raw <- ncol(data)
 ```
 ```{r}
 # summary statistics for all columns
 print(summary(data))
 ```
 
-data has: Rows: 28795 Columns: 19
-
+data has: Rows: `r format(n_rows_raw, big.mark = ",")` Columns: `r n_cols_raw`
 ```{r}
 # datatype
 print(glimpse(data))
@@ -46,7 +47,8 @@ print(glimpse(data))
 
 ```{r}
 # number of missing NA values
-print(colSums(is.na(data)))
+na_counts <- colSums(is.na(data))
+print(na_counts)
 ```
 
 ```{r}
@@ -80,22 +82,21 @@ ggplot(data, aes(x = days_since_review)) +
 # Find number of negative days
 negative_rows <- data %>% 
   filter(days_since_review < 0)
+
+n_neg_month_start <- nrow(negative_rows)
+
 negative_rows
 ```
 
-Summary statistics: price: median price is \$205, but the max is
-$43,654 (a massive extreme outlier? error?). 
-Price histogram: right skewed, due to extreme price outliers
+Summary statistics: price: median price is \$`r median(data$price, na.rm = TRUE)`, but the max is \$`r format(max(data$price, na.rm = TRUE), big.mark = ",")` (a massive extreme outlier? error?).
 
-license: entirely NA (28,795 missing values) -\> consider dropping if
-doesn't need this column
+license: entirely NA (`r format(na_counts[["license"]], big.mark = ",")` missing values) -\> consider dropping if doesn't need this column
 
-Missing values: price has 10,667 missing values: how to handle? or
-filter them out?
+Missing values: price has `r format(na_counts[["price"]], big.mark = ",")` missing values: how to handle? or filter them out?
 
-last_review and reviews_per_month both have 2,627 missing values
+last_review and reviews_per_month both have `r format(na_counts[["last_review"]], big.mark = ",")` missing values
 
-days_since_review has 9418 negative values. Days since last review
+days_since_review has `r format(n_neg_month_start, big.mark = ",")` negative values. Days since last review
 histogram: Most reviews happened very recently (clumped near 0 days),
 which makes sense for active listings, but there are long-tail stale
 listings stretching out past 1,000+ days. For month_year column, change
@@ -126,16 +127,16 @@ data_1 <- data %>%
 # Check how many rows in days_since_review still have negative values
 negative_rows <- data_1 %>%  
   filter(days_since_review < 0)
+
+n_neg_scrape_date <- nrow(negative_rows)
+
 print(negative_rows)
 ```
 
-Even after matching the scrape dates with the exact publication times,
-1745 negative values remain in days_since_review column. (So these
-reviews were posted in the days right after each monthly data
-collection, counted as active listing. So leave these negative days for
-now)
+Even after matching the scrape dates with the exact publication times, `r format(n_neg_scrape_date, big.mark = ",")` negative values remain in days_since_review column. (So these reviews were posted in the days right after each monthly data collection, counted as active listing. So leave these negative days fornow)
 
-DEAL with price column first -\> extreme outliers + 10667 missing values
+DEAL with price column first -\> extreme outliers + `r na_counts[["price"]]` missing values
+
 Check Price inconsistencies
 
 ```{r}
@@ -146,7 +147,7 @@ class(data_1$price)
 sum(is.na(data_1$price))
 ```
 
-See if 10667 missing prices are random or linked to specific months
+See if `r na_counts[["price"]]` missing prices are random or linked to specific months
 
 ```{r}
 # Check missing prices grouped by each month scrape
@@ -175,14 +176,15 @@ name_check <- data_1 %>%
   summarise(unique_names = n_distinct(name))
 
 # See how many listings ever changed their title
-table(name_check$unique_names > 1)
+name_changed <- table(name_check$unique_names > 1)
+name_changed
 ```
 
-FALSE (3,535 listings): For the vast majority of properties, the host
+FALSE (`r format(name_changed[["FALSE"]], big.mark = ",")` listings): For the vast majority of properties, the host
 never changed the listing title across the entire time period you
 observed. Their title stayed 100% identical.
 
-TRUE (582 listings): For 582 properties, the host did change their
+TRUE (`r name_changed[["TRUE"]]` listings): For `r name_changed[["TRUE"]]` properties the host did change their
 listing title at least once during your dataset
 
 ```{r}
@@ -219,13 +221,14 @@ data_2 <- data_1 %>%
   select(-consistent_price) # clean up temporary lookup column
 
 # Check how many missing prices remain
-print(sum(is.na(data_2$price)))
+n_price_na_after_impute <- sum(is.na(data_2$price))
+n_price_imputed <- sum(is.na(data_1$price)) - n_price_na_after_impute
+n_price_na_after_impute
 ```
 
-So 509 prices were filled as they were the same across every single
-other months they appeared in (id)
+So `r n_price_imputed` prices were filled as they were the same across every single other months they appeared in (id)
 
-Still has 10158 missing prices
+Still has `r format(n_price_na_after_impute, big.mark = ",")` missing prices
 
 Manage price outliers/extreme values Inspect the extreme rows
 
@@ -241,24 +244,24 @@ print(top_expensive)
 ```
 
 Rows 1-8 -\> likely error (checking latitude/altitude), doesn't make
-sense to have that much a night Rows 10-15 -\> also likely error. priced
-\>5000 per night in a private room doesn't make sense Rows 16-20..
+sense to have that much a night Rows 10-15 -\> also likely error. priced \>`r price_outlier_max` per night in a private room doesn't make sense Rows 16-20..
 maybe? entire home
 
 Keep rows 1-15 will cause statistical bias into analysis. It distorts
-the mean and standard deviation DECISION: Filter these 15 rows (note:
+the mean and standard deviation DECISION: Filter these `r sum(data_2$price >= price_outlier_max, na.rm = TRUE)` rows (note:
 filter() keeps every row where the condition evaluates to TRUE, and
 throws away anything that evaluates to FALSE)
 
 ```{r}
 # Clean the dataset by removing anything $5,000 or higher (while keeping NAs. Otherwise R will remove NAs as well)
 data_3 <- data_2 %>%
-  filter(price < 5000 | is.na(price))
+  filter(price < price_outlier_max | is.na(price))
 
 # Check how many rows were dropped
-nrow(data_2) - nrow(data_3)
+n_outliers_removed <- nrow(data_2) - nrow(data_3)
+n_outliers_removed
 ```
-Sanity check - compare histogram "before" and "after" remove outliers, to confirm the $5000 cutoff actually removed tail of extreme values
+Sanity check - compare histogram "before" and "after" remove outliers, to confirm the \$`r price_outlier_max` cutoff actually removed tail of extreme values
 ```{r}
 par(mfrow = c(1, 2))
 hist(data_2$price, main = "Before removing outliers")
@@ -327,6 +330,8 @@ and turns it into a literal 0
 
 ```{r}
 # Finalize the review columns treatment based on structural verification
+n_rpm_na <- sum(is.na(df_cleaned$reviews_per_month))
+
 df_cleaned <- df_cleaned %>%
   mutate(
     # Recode NA to 0 for numerical analysis (since we proved 0 doesn't otherwise exist)
@@ -337,26 +342,33 @@ df_cleaned <- df_cleaned %>%
 # 1. Check how many NA values remain in reviews_per_month (should be 0)
 sum(is.na(df_cleaned$reviews_per_month))
 
-# 2. Check how many 0s are now in reviews_per_month (should match your previous missing count, 2627)
+# 2. Check how many 0s are now in reviews_per_month (should match )
 sum(df_cleaned$reviews_per_month == 0)
 ```
 
 ```{r}
 # check columns
-colSums(is.na(df_cleaned))
+na_clean <- colSums(is.na(df_cleaned))
+na_clean
+
+min_nights_stats <- df_cleaned %>%
+  summarise(
+    min_n    = min(minimum_nights, na.rm = TRUE),
+    median_n = median(minimum_nights, na.rm = TRUE),
+    mean_n   = round(mean(minimum_nights, na.rm = TRUE), 3),
+    max_n    = max(minimum_nights, na.rm = TRUE)
+  )
 ```
 
-The Review-Related Columns (2,619 NAs) last_review: 2,619
-last_review_date: 2,619 days_since_review: 2,619 These three columns are
+The Review-Related Columns (`r format(na_clean[["last_review"]], big.mark = ",")` NAs) last_review: `r format(na_clean[["last_review"]], big.mark = ",")` days_since_review: `r format(na_clean[["days_since_review"]], big.mark = ",")` These two columns are
 locked together Decision to leave them as NA since can't calculate "days
 since a review" if there has never been a review.
 
-Price column: 10158 NAs
+Price column: `r format(na_clean[["price"]], big.mark = ",")` NAs
 
-minimum_nights: 37 NAs
+minimum_nights: `r na_clean[["minimum_nights"]]` NAs
 
-TO DECIDE: MINIMUM_NIGHTS NAs? impute with median : min-1, max-365,
-median-1, mean - 1.788
+TO DECIDE: MINIMUM_NIGHTS NAs? impute with median : min-`r min_nights_stats$min_n`, max-`r min_nights_stats$max_n`, median-`r min_nights_stats$median_n`, mean - `r min_nights_stats$mean_n`
 
 COLUMNS to drop: neighbourhood group only has 1 uniqe value so can't
 help compare anything
@@ -373,12 +385,6 @@ DECISION: DROP neighbourhood_group column
 df_cleaned <- df_cleaned %>%
   select(-neighbourhood_group)
 colnames(df_cleaned)
-```
-
-```{r}
-#check to see if last_review and last_review_date contain the exact same data
-# Check if both columns are identical element-by-element
-identical(df_cleaned$last_review, df_cleaned$last_review_date)
 ```
 
 DECISIONS: Drop: host_name : irrelevant to analysis, and is personal
@@ -434,16 +440,13 @@ nrow(df_cleaned)
 
 Summary:
 
-1. price column 
-Initially had 10,667 missing values, with 100%
-missing values for the 3 months: Dec 2025–Feb 2026. Imputed 509 prices
-where the listing had the same price across all other months. Removed 15
-extreme outliers with prices > $5,000, which were likely errors.
-Before: 28,795 rows After: 28,780 rows 
-Question: What should we do with the remaining 10,158 missing values? The price column is still right-skewed.
+1. price column
+Initially had `r format(na_counts[["price"]], big.mark = ",")` missing values, with 100% missing values for the 3 months: Dec 2025–Feb 2026. Imputed `r n_price_imputed` prices where the listing had the same price across all other months. Removed `r n_outliers_removed` extreme out liers with prices > \$`r format(price_outlier_max, big.mark = ",")`, which were likely errors.
+Before: `r format(n_rows_raw, big.mark = ",")` rows After: `r format(nrow(df_cleaned), big.mark = ",")` rows
+Question: What should we do with the remaining `r format(n_price_na_after_impute, big.mark = ",")` missing values? The price column is still right-skewed.
 
 2.  days_since_review column. 
-Added days_since_review as instructed in Week 5. Initially, scrape_date was set to the first day of each month (YYYY-MM-01), resulting in 9,418 negative values. Updated scrape_date to use the actual day the listing was scraped and recalculated days_since_review. There are now 1,745 negative values, likely because some reviews were posted after the scrape date.
+Added days_since_review as instructed in Week 5. Initially, scrape_date was set to the first day of each month (YYYY-MM-01), resulting in `r format(n_neg_month_start, big.mark = ",")` negative values. Updated scrape_date to use the actual day the listing was scraped and recalculated days_since_review. There are now `r format(n_neg_scrape_date, big.mark = ",")` negative values, likely because some reviews were posted after the scrape date.
 Question: Do we need this column? If so, how should we handle the
 negative values?
 
@@ -452,11 +455,10 @@ license – removed because it was 100% missing.
 neighbourhood_group – removed because all values were Christchurch_city, so it provides no useful comparison. 
 host_name – removed because it contains personally identifiable information and is not relevant to the analysis.
 
-4.  reviews_per_month and last_review:
-Converted 2,619 missing values in reviews_per_month to 0, since listings with no reviews have both reviews_per_month and last_review recorded as NA. Left last_review NAs unchanged for now, since replacing them with 0 would not make sense for a date variable. 
+4. Converted `r format(n_rpm_na, big.mark = ",")` missing values in reviews_per_month to 0, since listings with no reviews have both reviews_per_month and last_review recorded as NA. Left last_review NAs unchanged for now, since replacing them with 0 would not make sense for a date variable. 
 
-5.  minimum_nights: 
-Has 37 missing values. Current statistics: min = 1, median = 1, mean = 1.788, max = 365. Have left as it is. Depend on analysis later - impute missing values using median (1) or leave as it is?
+5. minimum_nights:
+Has `r na_clean[["minimum_nights"]]` missing values. Current statistics: min = `r min_nights_stats$min_n`, median = `r min_nights_stats$median_n`, mean = `r min_nights_stats$mean_n`, max = `r min_nights_stats$max_n`. Have left as it is. Depend on analysis later - impute missing values using median (1) or leave as it is?
 
 6. Other findings:
 There were no exact duplicates.
@@ -464,8 +466,9 @@ The same listing IDs appear multiple times because Inside Airbnb scraped
 them across different months, capturing how their prices and
 availability changed over time. So they are time-series records.
 
-Before cleaning- number of rows: 28795, columns: 19
-After cleaning: 28780, columns: 18
+Before cleaning- number of rows: `r format(n_rows_raw, big.mark = ",")`, columns: `r n_cols_raw`
+
+After cleaning: `r format(nrow(df_cleaned), big.mark = ",")`, columns: `r ncol(df_cleaned)`
     
 
 (Note: Cleaned dataset: df_cleaned)
