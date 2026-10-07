@@ -90,7 +90,7 @@ counts <- c(oct25=nrow(chch_oct25), nov25=nrow(chch_nov25), dec25=nrow(chch_dec2
 barplot(counts, main = "Listings per month before combining", las = 2)
 ```
 
-Combining all nine monthly datasets into a single Christchurch dataset spanning October 2025 to June 2026.
+Combining all monthly datasets into a single Christchurch dataset spanning October 2025 to June 2026.
 
 ```{r}
 # Row bind all monthly Christchurch datasets into one combined dataset
@@ -158,22 +158,24 @@ hist(chch_file$price,
 # Check the price vs frequency in each bin in a table form
 # Create 5000 block/bins from 0 to 45000
 price_bins <- cut(chch_file$price, breaks =seq(0, 45000, by = 5000))
-table(price_bins)
+bin_count <- table(price_bins)
+bin_count
 ```
 
-1 listing priced between 20000-25000, and 8 priced at 40000-45000
+`r bin_count[[5]]` listing priced between 20000-25000, and `r bin_count[[9]]` priced at 40000-45000
 
 ```{r check outliers}
 
 outliers <- chch_file %>%
-  filter(price >20000)
+  filter(price > outlier_check_min)
+lowest_outlier <- outliers %>% slice_min(price, n = 1)
 head(outliers)
 # shows 9 outliers
 ```
 
-To check the accommodation priced at \$22971/night. Checking its latitude (-43.52059) and longitude(172.6496) showed on google map to be at address 333 Bealey Avenue, chch central. Checked accommodation on google map priced at \$43188/night and \$43178/night, also appeared unlikely to worth that much. These 9 values likely error, to drop these 9 extreme outlier values
+To check the accommodation priced at \$`r lowest_outlier$price`/night. Checking its latitude (`r lowest_outlier$latitude`) and longitude(`r lowest_outlier$longitude`) showed on google map to be at address 333 Bealey Avenue, chch central. Checked accommodation on google map priced at \$43188/night and \$43178/night, also appeared unlikely to worth that much. These `r nrow(outliers)` values are likely errors, so we drop these `r nrow(outliers)` extreme outlier values
 
-```{r dropping 9 price outliers}
+```{r dropping price outliers}
 
 chch_clean <- chch_file %>%
   filter(price <=1500) #filter to only include accommodation with price <=$1500
@@ -235,20 +237,20 @@ head(sorted_data$number_of_reviews, 40)
 print(sorted_data)
 ```
 
-Finding the number of rows in the dataset and finding 10% (0.1) of the data
+Finding the number of rows in the dataset and finding `r top_pct * 100`% (`r top_pct`) of the data
 
 ```{r}
 #finding num of rows
 n_total <- nrow(chch_file)
 
 #finding top 10%
-top_prc <- n_total * 0.1
+top_prc <- n_total * top_pct
 
 #printing top percentage
 print(top_prc)
 ```
 
-Showing top 10% of the data
+Showing top `r top_pct * 100`% of the data
 ```{r}
 head(sorted_data, n = top_prc)
 ```
