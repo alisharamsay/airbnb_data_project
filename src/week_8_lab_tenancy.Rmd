@@ -35,7 +35,8 @@ check how many literal "NULL" text strings exist versus actual missing values (N
 
 ```{r}
 #Count if any columns contain the literal text string "NULL"
-print(sapply(data, function(x) sum(as.character(x) == "NULL", na.rm = TRUE)))
+null_counts <- sapply(data, function(x) sum(as.character(x) == "NULL", na.rm = TRUE))
+print(null_counts)
 ```
 
 TimeFrame 0 Location Id 794 \<- has Null strings ?should be numeric Dwelling Type 0 Number Of Beds 0 Total Bonds 0 Active Bonds 0 Closed Bonds 0 Median Rent 803 \<- has Null strings Geometric Mean Rent 803 \<- has Null strings Upper Quartile Rent 803 \<- has Null strings Lower Quartile Rent 803 \<- has Null strings Log Std Dev Weekly Rent 859 \<- has Null strings
@@ -128,8 +129,7 @@ barplot(table(data_2$TimeFrame),
         xlab = "Quarter", ylab = "Number of rows", las = 2)
 ```
 
-Summary so far: missing data stored as literal string "NULL" rather than NA for: location_id (794 "NULL" values), Median, Geometric Mean, Upper Quartile, Lower Quartile (all has 803 "NULL" values) Log Std Dev Weekly Rent: (859 "NULL" values) Convert all rent metrics (Median, Geometric Mean, Upper Quartile, Lower Quartile, Log Std Dev Weekly Rent) to numeric (automatically turns "NULL" into NA)
-
+Summary so far: missing data stored as literal string "NULL" rather than NA for: location_id (`r null_counts[["Location Id"]]` "NULL" values), Median, Geometric Mean, Upper Quartile, Lower Quartile (all has `r null_counts[["Median Rent"]]` "NULL" values) Log Std Dev Weekly Rent: (`r null_counts[["Log Std Dev Weekly Rent"]]` "NULL" values) Convert all rent metrics (Median, Geometric Mean, Upper Quartile, Lower Quartile, Log Std Dev Weekly Rent) to numeric (automatically turns "NULL" into NA)
 location_id also has -99 that represents something
 
 left "number of beds" as categorical column because it includes strings "ALL" and "5+" alongside numbers, which may be needed for analysis
@@ -138,6 +138,7 @@ Filtered the dataset to October 2025-june 2026 as per airbnb file
 
 ```{r}
 colSums(is.na(data_2))
+
 ```
 
 ```{r}
@@ -158,16 +159,25 @@ data_3 <- data_2 %>%
   mutate(`Location Id` = na_if(`Location Id`, "NULL"))
 
 # check
+n_missing_loc <- sum(is.na(data_3$`Location Id`))
+n_missing_loc
+
+# check
 sum(is.na(data_3$'Location Id'))
 ```
 
 Check whether the 94 missing Location Id rows are concentrated in one quarter or spread across all three.
 ```{r}
-data_3 %>%
+missing_by_quarter <- data_3 %>%
   mutate(missing_loc = is.na(`Location Id`)) %>%
   group_by(TimeFrame) %>%
-  summarise(missing_rows = sum(missing_loc)) %>%
-  arrange(TimeFrame)
+  summarise(
+    total_rows = n(),
+    missing_rows = sum(missing_loc),
+    pct_missing = round(100 * missing_rows / total_rows, 2)
+  )
+
+missing_by_quarter
 ```
 Each quarter has a similar number of missing rows (29-33), suggesting this is spread out by chance rather than tied to a specific time period.
 
@@ -182,9 +192,9 @@ data_3 %>%
     pct_missing = round(100 * missing_rows / total_rows, 2)
   )
 ```
-The missing rate is nearly identical across all three quarters (0.34%, 0.36%, 0.34%), confirming the missingness isn't linked to a specific time period.
+The missing rate is nearly identical across all three quarters (`r missing_by_quarter$pct_missing[1]`%, `r missing_by_quarter$pct_missing[2]`%, `r missing_by_quarter$pct_missing[3]`%), confirming the missingness isn't linked to a specific time period.
 
-The identifer of the dataset (location id) has 94 missing values.. drop? as looks like the "NULL" were there because there were fewer than 5 bonds for that specific combination, so it's hidden so people can't trace who these tenants are. And there's no way knowing these ids.. Decision to drop these 94 rows
+The identifer of the dataset (location id) has `r n_missing_loc` missing values.. drop? as looks like the "NULL" were there because there were fewer than 5 bonds for that specific combination, so it's hidden so people can't trace who these tenants are. And there's no way knowing these ids.. Decision to drop these `r n_missing_loc` rows
 
 ```{r}
 data_4 <- data_3 %>%
@@ -231,9 +241,22 @@ unique(data_4$`Number Of Beds`)
 
 ```{r}
 colSums(is.na(data_4))
+
+# Saving values
+rows_before   <- format(nrow(data), big.mark = ",")
+rows_after    <- format(nrow(data_4), big.mark = ",")
+n_missing_loc <- sum(is.na(data_3$`Location Id`))
+active_mean   <- round(mean(data_4$`Active Bonds`, na.rm = TRUE), 1)
+active_median <- median(data_4$`Active Bonds`, na.rm = TRUE)
+total_mean    <- round(mean(data_4$`Total Bonds`, na.rm = TRUE), 2)
+total_median  <- median(data_4$`Total Bonds`, na.rm = TRUE)
+rent_min      <- min(data_4$`Median Rent`, na.rm = TRUE)
+rent_max      <- max(data_4$`Median Rent`, na.rm = TRUE)
+beds_missing  <- sum(is.na(data_4$`Number Of Beds`))
 ```
 
-Active bond has a mean 358.6 vs median 87, Total bond has a mean of 34.59 and median of 9. Because location id -99 are national totals so is causing this...will need to decide about this -99 Median rent has a max of 3350/week - very high min median rent of 90/week No negative or 0 rent The Number Of Beds column contains a mix of numeric values (0 to 9), text strings like 'ALL' and '5+', and missing values (NA). But currently they are all being treated as a string. -\> inconsistent formatting, will need thinking about.. It also has 876 missing values remaining
+Active bond has a mean `r active_mean` vs median `r active_median`, Total bond has a mean of `r total_mean` and median of `r total_median`. Because location id -99 are national totals so is causing this...will need to decide about this -99 Median rent has a max of `r rent_max`/week - very high min median rent of `r rent_min`/week No negative or 0 rent The Number Of Beds column contains a mix of numeric values (0 to 9), text strings like 'ALL' and '5+', and missing values (NA). But currently they are all being treated as a string. -\> inconsistent formatting, will need thinking about.. It also has `r beds_missing` missing values remaining
+
 
 Previous missing values (94) in median rent, geometric mean rent, upper quartile rent, lower quartile rent, log std dev weekly rent disappeared when dropped the location ID "NULL" rows
 
@@ -295,22 +318,22 @@ Summary: 1. Filtered the dataset to October 1, 2025 – June 30, 2026 to match t
 These rows had corresponding "NULL" string in five rent-related columns (Median Rent, Geometric Mean Rent, Upper Quartile Rent, Lower Quartile Rent, and Log Std Dev Weekly Rent. These 94 rows were dropped because the corresponding location IDs cannot be recovered.This has turned the rent-related column from character strings to numeric (dbl).
 Removing these rows also removed all NA values in the rent-related columns (Median Rent, Geometric Mean Rent, Upper Quartile Rent, Lower Quartile Rent, and Log Std Dev Weekly Rent).
 Question: 
-location ID still has -99, which appears to represent country-wide total. Keeping this data makes rent right skewed (Active Bonds: mean = 358.6 vs. median = 87 Total Bonds: mean = 34.59 vs. median = 9), what to do with this?
+location ID still has -99, which appears to represent country-wide total. Keeping this data makes rent right skewed (Active Bonds: mean = `r active_mean` vs. median = `r active_median` Total Bonds: mean = `r total_mean` vs. median = `r total_median`), what to do with this?
 
 3.  Number Of Beds: contains numeric values (0–9) as well as string "ALL" and "5+" so the column is character/categorical column. Left as it is for now.
 
 4.  General findings: 
 -No duplicates were found, either for the exact combination of variables or at the primary key level (TimeFrame, Location ID, Dwelling Type, Number of Beds). 
 -Rent values: No negative or zero rents were found. 
--Rent extremes: Median rent ranged from $90 to $3,350 per week. The highest rent values ($2,880–$3,575 per week) appear plausible rather than being data-entry errors, as they are associated with 5+ bedroom/all-dwelling properties and low bond counts. Therefore, no columns or observations were dropped based on these extreme values.
+-Rent extremes: Median rent ranged from $`r rent_min` to $`r format(rent_max, big.mark = ",")` per week. The highest rent values ($2,880–$3,575 per week) appear plausible rather than being data-entry errors, as they are associated with 5+ bedroom/all-dwelling properties and low bond counts. Therefore, no columns or observations were dropped based on these extreme values.
 
 Before cleaning-
-Rows: 226,080
-Columns: 12
+Rows: `r rows_before`
+Columns: `r ncol(data)`
 
 After cleaning- 
-Rows: 27,118
-Columns: 12
+Rows: `r rows_after`
+Columns: `r ncol(data_4)`
 
 (Note Cleaned dataset: data_4)
 
